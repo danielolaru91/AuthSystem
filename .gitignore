@@ -1,0 +1,57 @@
+############################################
+# OS / Editor
+############################################
+.DS_Store
+Thumbs.db
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+.idea/
+*.swp
+
+############################################
+# .NET / ASP.NET Core (backend)
+############################################
+backend/bin/
+backend/obj/
+
+# User-specific files
+backend/**/*.user
+backend/**/*.suo
+backend/**/*.userosscache
+backend/**/*.sln.docstates
+
+############################################
+# Angular / Node (frontend)
+############################################
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.cache/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+############################################
+# Environment variables / secrets
+############################################
+.env
+.env.*
+!*.example
+
+backend/appsettings.Development.json
+backend/appsettings.Local.json
+
+############################################
+# Build outputs
+############################################
+*.log
+*.tmp
+*.temp
+
+############################################
+# Test results
+############################################
+TestResults/
