@@ -32,4 +32,6 @@ export class AuthService {
     }
 
     resetPassword(data: { token: string; newPassword: string }) { return this._http.post(`${this._apiUrl}/reset-password`, data); }
+
+    confirmEmail(token: string) { return this._http.post(`${this._apiUrl}/confirm-email`, { token }); }
 }

@@ -15,6 +15,13 @@ namespace backend.Models
         public string PasswordHash { get; set; } = string.Empty;
 
         public string? ResetToken { get; set; }
+
         public DateTime? ResetTokenExpires { get; set; }
+
+        public bool EmailConfirmed { get; set; } = false; public string? 
+
+        EmailConfirmationToken { get; set; } public DateTime? 
+        
+        EmailConfirmationExpires { get; set; }
     }
 }

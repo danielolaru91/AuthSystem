@@ -37,16 +37,34 @@ namespace backend.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
                 return Conflict(new { Success = false, Message = "Email already registered" });
 
+            var tokenBytes = RandomNumberGenerator.GetBytes(64);
+            var emailToken = Base64UrlEncoder.Encode(tokenBytes);
+
             var user = new User
             {
                 Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                EmailConfirmed = false,
+                EmailConfirmationToken = emailToken,
+                EmailConfirmationExpires = DateTime.UtcNow.AddHours(24)
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(new { Success = true, Message = "User registered successfully" });
+            var confirmUrl = $"http://localhost:4200/confirm-email?token={emailToken}";
+
+            var subject = "Confirm your email address";
+            var html = $@"
+                <p>Welcome!</p>
+                <p>Please confirm your email by clicking the link below:</p>
+                <p><a href=""{confirmUrl}"">Confirm Email</a></p>
+                <p>This link expires in 24 hours.</p>
+            ";
+
+            await _emailService.SendEmailAsync(user.Email, subject, html);
+
+            return Ok(new { Success = true, Message = "Registration successful. Please check your email to confirm your account." });
         }
 
         // POST: api/auth/login
@@ -56,6 +74,9 @@ namespace backend.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 return Unauthorized(new { Success = false, Message = "Invalid email or password" });
+
+            if (!user.EmailConfirmed) 
+                return Unauthorized(new { Success = false, Message = "Please confirm your email before logging in." });
 
             var keyString = _config["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
             if (string.IsNullOrEmpty(keyString))
@@ -157,5 +178,25 @@ namespace backend.Controllers
 
             return Ok(new { Success = true, Message = "Password reset successfully" });
         }
+
+        [HttpPost("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.EmailConfirmationToken == request.Token &&
+                u.EmailConfirmationExpires > DateTime.UtcNow);
+
+            if (user == null)
+                return BadRequest(new { Success = false, Message = "Invalid or expired confirmation token" });
+
+            user.EmailConfirmed = true;
+            user.EmailConfirmationToken = null;
+            user.EmailConfirmationExpires = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Success = true, Message = "Email confirmed successfully" });
+        }
+
     }
 }
