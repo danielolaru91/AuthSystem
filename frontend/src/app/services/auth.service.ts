@@ -26,4 +26,10 @@ export class AuthService {
     logout() {
         return this._http.post(`${this._apiUrl}/logout`, {}, { withCredentials: true });
     }
+
+    requestReset(credentials: { email: string; }) {
+        return this._http.post(`${this._apiUrl}/request-reset`, credentials);
+    }
+
+    resetPassword(data: { token: string; newPassword: string }) { return this._http.post(`${this._apiUrl}/reset-password`, data); }
 }

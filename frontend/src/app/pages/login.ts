@@ -5,14 +5,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AuthModel, AuthService } from '../services/auth.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-login',
-  imports: [Field, MatFormFieldModule, MatInputModule, MatCardModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [Field, MatFormFieldModule, MatInputModule, MatCardModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="login-wrapper">
@@ -42,12 +42,18 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
             </mat-card-content>
 
             <mat-card-footer>
-                <button matButton="filled" [disabled]="loginForm().invalid() || loading()" (click)="onSubmit()">
+                <button matButton="filled" [disabled]="loading()" (click)="onSubmit()">
                     @if(loading()){
                         <mat-spinner diameter="20"></mat-spinner>
                     }@else {
                         Log In
                     }
+                </button>
+                <button matButton routerLink="/forgot-password">
+                    Forgot Password
+                </button>
+                <button matButton routerLink="/register">
+                    Register
                 </button>
             </mat-card-footer>
         </mat-card>
@@ -69,7 +75,16 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
         padding: 16px;
     }
     mat-card-footer {
-        padding-top: 0;
+        padding-top: 6px;
+        display: flex;
+        button:nth-child(2){
+            margin-left: auto;
+        }
+    }
+    .forgot-password {
+        display:flex;
+        place-content: end;
+        margin:0;
     }
   `
 })
@@ -90,6 +105,10 @@ export class Login {
     });
 
     public onSubmit() {
+        this.loginForm().markAsTouched();
+        if (!this.loginForm().valid()) {
+            return;
+        }
         this.loading.set(true);
         submit(this.loginForm, async () => {
         const credentials = this.loginModel();

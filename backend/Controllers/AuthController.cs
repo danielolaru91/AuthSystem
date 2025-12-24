@@ -1,11 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
-using backend.Data;
-using backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using backend.Data;
+using backend.Models;
+using backend.Dtos;
+using backend.Services;
 
 namespace backend.Controllers
 {
@@ -15,23 +18,13 @@ namespace backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _config;
+        private readonly EmailService _emailService;
 
-        public AuthController(AppDbContext context, IConfiguration config)
+        public AuthController(AppDbContext context, IConfiguration config, EmailService emailService)
         {
             _context = context;
             _config = config;
-        }
-
-        public class RegisterRequest
-        {
-            public string Email { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
-        }
-
-        public class LoginRequest
-        {
-            public string Email { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
+            _emailService = emailService;
         }
 
         // POST: api/auth/register
@@ -64,7 +57,6 @@ namespace backend.Controllers
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 return Unauthorized(new { Success = false, Message = "Invalid email or password" });
 
-            // ✅ Load JWT key from config/env
             var keyString = _config["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
             if (string.IsNullOrEmpty(keyString))
                 throw new Exception("JWT key is not set in configuration or environment");
@@ -76,7 +68,7 @@ namespace backend.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
             };
-            
+
             var token = new JwtSecurityToken(
                 issuer: "backend",
                 audience: "frontend",
@@ -87,11 +79,10 @@ namespace backend.Controllers
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
-            // 🍪 Set cookie
             Response.Cookies.Append("auth_token", jwt, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = false, // true in production (HTTPS)
+                Secure = false,
                 SameSite = SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddHours(2)
             });
@@ -113,6 +104,58 @@ namespace backend.Controllers
         {
             Response.Cookies.Delete("auth_token");
             return Ok();
+        }
+
+        // POST: api/auth/request-reset
+        [HttpPost("request-reset")]
+        public async Task<IActionResult> RequestReset([FromBody] RequestPasswordReset request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                return Ok(new { Success = true });
+
+            // ⭐ Generate URL-safe token
+            var tokenBytes = RandomNumberGenerator.GetBytes(64);
+            var token = Base64UrlEncoder.Encode(tokenBytes);
+
+            user.ResetToken = token;
+            user.ResetTokenExpires = DateTime.UtcNow.AddHours(1);
+
+            await _context.SaveChangesAsync();
+
+            var resetUrl = $"http://localhost:4200/reset-password?token={token}";
+
+            var subject = "Reset your password";
+            var html = $@"
+                <p>Hello,</p>
+                <p>You requested a password reset. Click the link below to reset your password:</p>
+                <p><a href=""{resetUrl}"">Reset Password</a></p>
+                <p>If you did not request this, you can safely ignore this email.</p>
+            ";
+
+            await _emailService.SendEmailAsync(user.Email, subject, html);
+
+            return Ok(new { Success = true });
+        }
+
+        // POST: api/auth/reset-password
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.ResetToken == request.Token &&
+                u.ResetTokenExpires > DateTime.UtcNow);
+
+            if (user == null)
+                return BadRequest(new { Success = false, Message = "Invalid or expired token" });
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpires = null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Success = true, Message = "Password reset successfully" });
         }
     }
 }

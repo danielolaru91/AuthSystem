@@ -4,37 +4,33 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { AuthModel, AuthService } from '../services/auth.service';
+import { AuthService } from '../services/auth.service';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { RouterLink } from '@angular/router';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
+export interface ForgotPasswordModel {
+  email: string;
+}
 
 @Component({
-  selector: 'app-register',
-  imports: [Field, MatFormFieldModule, MatInputModule, MatCardModule, MatButtonModule, MatSnackBarModule, MatProgressSpinnerModule, RouterLink],
+  selector: 'app-forgot-password',
+  imports: [Field, MatFormFieldModule, MatInputModule, MatCardModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="register-wrapper">
+    <div class="forgot-password-wrapper">
         <mat-card>
             <mat-card-header>
-                <mat-card-title>Register</mat-card-title>
+                <mat-card-title>Forgot Password</mat-card-title>
             </mat-card-header>
 
             <mat-card-content>
                 <form>
                     <mat-form-field>
                     <mat-label>Email</mat-label>
-                    <input matInput type="email" [field]="registerForm.email">
-                    @for (err of registerForm.email().errors(); track err.kind) {
-                    <mat-error>{{ err.message }}</mat-error>
-                    }
-                    </mat-form-field>
-
-                    <mat-form-field>
-                    <mat-label>Password</mat-label>
-                    <input matInput type="password" [field]="registerForm.password" autocomplete="password">
-                    @for (err of registerForm.password().errors(); track err.kind) {
+                    <input matInput type="email" [field]="forgotPasswordForm.email">
+                    @for (err of forgotPasswordForm.email().errors(); track err.kind) {
                     <mat-error>{{ err.message }}</mat-error>
                     }
                     </mat-form-field>
@@ -42,27 +38,30 @@ import { RouterLink } from '@angular/router';
             </mat-card-content>
 
             <mat-card-footer>
-                <button matButton="filled" [disabled]="loading()" (click)="onSubmit($event)">
+                <button matButton="filled" [disabled]="loading()" (click)="onSubmit()">
                     @if(loading()){
                         <mat-spinner diameter="20"></mat-spinner>
                     }@else {
-                        Sign Up
+                        Submit
                     }
                 </button>
                 <button matButton routerLink="/login">
-                    Login
+                    Back to Login
                 </button>
             </mat-card-footer>
         </mat-card>
     </div>
   `,
   styles: `
-    .register-wrapper {
+    .forgot-password-wrapper {
         display: flex;
         justify-content: center;
         align-items: center; 
         height: 100%; 
         padding: 20px;
+    }
+    mat-card {
+        width: 400px;
     }
     mat-form-field {
         width: 100%;
@@ -71,7 +70,7 @@ import { RouterLink } from '@angular/router';
     mat-card-footer {
         padding: 16px;
     }
-    mat-card-footer {\
+    mat-card-footer {
         padding-top: 6px;
         display: flex;
         button:nth-child(2){
@@ -80,33 +79,32 @@ import { RouterLink } from '@angular/router';
     }
   `
 })
-export class Register {
-    protected loading = signal(false);
+export class ForgotPassword {
+    private router = inject(Router);
     private authService = inject(AuthService);
     private snackBar = inject(MatSnackBar);
-    public registerModel = signal<AuthModel>({
-        email: '',
-        password: '',
-    });
+    protected loading = signal(false);
+    public forgotPasswordModel = signal<ForgotPasswordModel>({email: ''});
 
-    public registerForm = form(this.registerModel, (schemaPath) => {
+    public forgotPasswordForm = form(this.forgotPasswordModel, (schemaPath) => {
         required(schemaPath.email, {message: 'Email is required'});
         email(schemaPath.email, {message: 'Enter a valid email address'});
-        required(schemaPath.password, {message: 'Password is required'});
     });
 
-    public onSubmit(event: Event) {
-        this.registerForm().markAsTouched();
-        if (!this.registerForm().valid()) {
+    public onSubmit() {
+        this.forgotPasswordForm().markAsTouched();
+        if (!this.forgotPasswordForm().valid()) {
             return;
         }
         this.loading.set(true);
-        submit(this.registerForm, async () => {
-        const credentials = this.registerModel();
+        submit(this.forgotPasswordForm, async () => {
+        const credentials = this.forgotPasswordModel();
 
-        this.authService.register(credentials).pipe(finalize(() => this.loading.set(false))).subscribe({
-            next: (response) => {
-            this.snackBar.open(response.message, 'Close', {
+        this.authService.requestReset(credentials).pipe(
+            finalize(() => this.loading.set(false))
+        ).subscribe({
+            next: () => {
+            this.snackBar.open('Password request sent. Please check your email.', 'Close', {
                 duration: 3000,
                 horizontalPosition: 'right',
                 verticalPosition: 'top',
