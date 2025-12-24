@@ -16,22 +16,22 @@ export class AuthService {
     private readonly _apiUrl = environment.apiUrl;
 
     register(credentials: AuthModel): Observable<any> {
-        return this._http.post(`${this._apiUrl}/register`, credentials);
+        return this._http.post(`${this._apiUrl}/auth/register`, credentials);
     }
 
     login(credentials: { email: string; password: string }) {
-        return this._http.post(`${this._apiUrl}/login`, credentials, { withCredentials: true });
+        return this._http.post(`${this._apiUrl}/auth/login`, credentials, { withCredentials: true });
     }
 
     logout() {
-        return this._http.post(`${this._apiUrl}/logout`, {}, { withCredentials: true });
+        return this._http.post(`${this._apiUrl}/auth/logout`, {}, { withCredentials: true });
     }
 
     requestReset(credentials: { email: string; }) {
-        return this._http.post(`${this._apiUrl}/request-reset`, credentials);
+        return this._http.post(`${this._apiUrl}/auth/request-reset`, credentials);
     }
 
-    resetPassword(data: { token: string; newPassword: string }) { return this._http.post(`${this._apiUrl}/reset-password`, data); }
+    resetPassword(data: { token: string; newPassword: string }) { return this._http.post(`${this._apiUrl}/auth/reset-password`, data); }
 
-    confirmEmail(token: string) { return this._http.post(`${this._apiUrl}/confirm-email`, { token }); }
+    confirmEmail(token: string) { return this._http.post(`${this._apiUrl}/auth/confirm-email`, { token }); }
 }
