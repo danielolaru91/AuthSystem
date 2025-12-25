@@ -10,6 +10,7 @@ import { CreateCompanyDialog } from '../components/create-company-dialog';
 import { ConfirmDialog } from '../components/confirm-dialog';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-companies',
@@ -19,15 +20,27 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
     MatButtonModule,
     MatIconModule,
     MatSortModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatCheckboxModule
   ],
   template: `
     <div class="header">
       <h2>Companies</h2>
 
-      <button mat-mini-fab color="primary" (click)="openCreateDialog()">
-        <mat-icon>add</mat-icon>
-      </button>
+      <div class="actions">
+        <button mat-mini-fab color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+        </button>
+
+        <button
+          mat-mini-fab
+          color="warn"
+          [disabled]="selection.size === 0"
+          (click)="confirmBulkDelete()"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </div>
     </div>
 
     @if (loading()) {
@@ -43,11 +56,30 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
         class="mat-elevation-z2"
       >
 
+        <!-- Select Column -->
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef>
+            <mat-checkbox
+              (change)="toggleSelectAll($event.checked)"
+              [checked]="isAllSelected()"
+              [indeterminate]="isIndeterminate()"
+            ></mat-checkbox>
+          </th>
+          <td mat-cell *matCellDef="let c">
+            <mat-checkbox
+              (change)="toggleSelection(c)"
+              [checked]="selection.has(c.id)"
+            ></mat-checkbox>
+          </td>
+        </ng-container>
+
+        <!-- Name Column -->
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
           <td mat-cell *matCellDef="let c">{{ c.name }}</td>
         </ng-container>
 
+        <!-- Actions Column -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef class="actions-right">Actions</th>
           <td mat-cell *matCellDef="let c" class="actions-right">
@@ -85,6 +117,10 @@ import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
       justify-content: space-between;
       align-items: center;
     }
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
     .actions-right {
       text-align: right;
     }
@@ -99,12 +135,15 @@ export class Companies implements OnInit {
   displayedCompanies = signal<Company[]>([]);
   loading = signal(false);
 
-  cols = ['name', 'actions'];
+  selection = new Set<number>();
+
+  cols = ['select', 'name', 'actions'];
 
   sort = viewChild(MatSort);
   paginator = viewChild(MatPaginator);
 
   constructor() {
+    // Sorting effect
     effect(() => {
       const sort = this.sort();
       if (!sort) return;
@@ -115,6 +154,7 @@ export class Companies implements OnInit {
       });
     });
 
+    // Pagination effect
     effect(() => {
       const paginator = this.paginator();
       if (!paginator) return;
@@ -137,6 +177,7 @@ export class Companies implements OnInit {
     this.service.getAll().subscribe({
       next: (data) => {
         this.companies = data;
+        this.selection.clear();
         this.loading.set(false);
 
         this.applySort();
@@ -146,6 +187,7 @@ export class Companies implements OnInit {
     });
   }
 
+  // Sorting
   applySort() {
     const sort = this.sort();
     if (!sort) return;
@@ -167,6 +209,7 @@ export class Companies implements OnInit {
     });
   }
 
+  // Pagination
   applyPagination() {
     const paginator = this.paginator();
     if (!paginator) return;
@@ -175,6 +218,96 @@ export class Companies implements OnInit {
     const end = start + paginator.pageSize;
 
     this.displayedCompanies.set(this.companies.slice(start, end));
+  }
+
+  // Selection logic
+  toggleSelection(company: Company) {
+    if (this.selection.has(company.id)) {
+      this.selection.delete(company.id);
+    } else {
+      this.selection.add(company.id);
+    }
+  }
+
+  toggleSelectAll(checked: boolean) {
+    if (checked) {
+      this.selection = new Set(this.companies.map(c => c.id));
+    } else {
+      this.selection.clear();
+    }
+  }
+
+  isAllSelected() {
+    return this.selection.size === this.companies.length && this.companies.length > 0;
+  }
+
+  isIndeterminate() {
+    return this.selection.size > 0 && this.selection.size < this.companies.length;
+  }
+
+  // Bulk delete
+  confirmBulkDelete() {
+    const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
+
+    ref.afterClosed().subscribe(result => {
+      if (!result) return;
+      this.bulkDelete();
+    });
+  }
+
+  bulkDelete() {
+    const ids = Array.from(this.selection);
+
+    this.service.bulkDelete(ids).subscribe({
+      next: () => {
+        this.snackBar.open('Selected companies deleted!', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-success']
+        });
+
+        this.selection.clear();
+        this.load();
+      },
+      error: () => {
+        this.snackBar.open('Failed to delete companies!', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'right',
+          verticalPosition: 'top',
+          panelClass: ['snackbar-error']
+        });
+      }
+    });
+  }
+
+  // Single delete
+  confirmDelete(company: Company) {
+    const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
+
+    ref.afterClosed().subscribe(result => {
+      if (!result) return;
+
+      this.service.delete(company.id).subscribe({
+        next: () => {
+          this.snackBar.open('Company deleted successfully!', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top',
+            panelClass: ['snackbar-success']
+          });
+          this.load();
+        },
+        error: () => {
+          this.snackBar.open('Failed to delete company!', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top',
+            panelClass: ['snackbar-error']
+          });
+        }
+      });
+    });
   }
 
   openCreateDialog() {
@@ -226,34 +359,6 @@ export class Companies implements OnInit {
         },
         error: () => {
           this.snackBar.open('Failed to update company!', 'Close', {
-            duration: 3000,
-            horizontalPosition: 'right',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-error']
-          });
-        }
-      });
-    });
-  }
-
-  confirmDelete(company: Company) {
-    const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
-
-    ref.afterClosed().subscribe(result => {
-      if (!result) return;
-
-      this.service.delete(company.id).subscribe({
-        next: () => {
-          this.snackBar.open('Company deleted successfully!', 'Close', {
-            duration: 3000,
-            horizontalPosition: 'right',
-            verticalPosition: 'top',
-            panelClass: ['snackbar-success']
-          });
-          this.load();
-        },
-        error: () => {
-          this.snackBar.open('Failed to delete company!', 'Close', {
             duration: 3000,
             horizontalPosition: 'right',
             verticalPosition: 'top',

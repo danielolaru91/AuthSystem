@@ -69,4 +69,23 @@ public class CompaniesController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPost("bulk-delete")]
+    public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
+    {
+        if (ids == null || ids.Count == 0)
+            return BadRequest("No IDs provided.");
+
+        var companies = await _context.Companies
+            .Where(c => ids.Contains(c.Id))
+            .ToListAsync();
+
+        if (companies.Count == 0)
+            return NotFound("No matching companies found.");
+
+        _context.Companies.RemoveRange(companies);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

@@ -27,4 +27,8 @@ export class CompaniesService {
   delete(id: number) {
     return this.http.delete(`${this.api}/${id}`);
   }
+
+  bulkDelete(ids: number[]) { 
+    return this.http.post(`${this.api}/bulk-delete`, ids); 
+  }
 }
