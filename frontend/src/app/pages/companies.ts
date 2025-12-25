@@ -11,8 +11,9 @@ import { ConfirmDialog } from '../components/confirm-dialog';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormField, MatFormFieldModule } from "@angular/material/form-field";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from '@angular/material/input';
+import { MatToolbarModule } from '@angular/material/toolbar';
 
 @Component({
   selector: 'app-companies',
@@ -25,9 +26,9 @@ import { MatInputModule } from '@angular/material/input';
     MatPaginatorModule,
     MatCheckboxModule,
     MatFormFieldModule,
-    MatFormField,
-    MatInputModule
-],
+    MatInputModule,
+    MatToolbarModule
+  ],
   template: `
     <div class="header">
       <h2>Companies</h2>
@@ -48,29 +49,36 @@ import { MatInputModule } from '@angular/material/input';
       </div>
     </div>
 
-<mat-form-field appearance="fill" class="search-field">
-  <mat-label>Search companies</mat-label>
+    <mat-toolbar class="table-toolbar" color="transparent">
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+    <mat-label>Search companies</mat-label>
 
-  <input
-    matInput
-    [value]="search()"
-    (input)="onSearch($event.target.value)"
-  />
+    <input
+        matInput
+        [value]="search()"
+        (input)="onSearch($event.target.value)"
+    />
 
-  <ng-container matSuffix>
-    @if(search()){
-    <button
-      mat-icon-button
-      aria-label="Clear"
-      (click)="onSearch('')"
-    >
-      <mat-icon>close</mat-icon>
-    </button>
-    }
-  </ng-container>
-</mat-form-field>
+    <ng-container matSuffix>
+        @if (search()) {
+        <button mat-icon-button (click)="onSearch('')">
+            <mat-icon>close</mat-icon>
+        </button>
+        }
+    </ng-container>
+    </mat-form-field>
 
 
+      <span class="spacer"></span>
+
+      <mat-paginator
+        #paginator
+        [length]="filteredCompanies().length"
+        [pageSize]="10"
+        [pageSizeOptions]="[5, 10, 20]"
+        showFirstLastButtons
+      ></mat-paginator>
+    </mat-toolbar>
 
     @if (loading()) {
       <div>Loading companies...</div>
@@ -131,14 +139,6 @@ import { MatInputModule } from '@angular/material/input';
 
       </table>
 
-      <mat-paginator
-        #paginator
-        [length]="filteredCompanies().length"
-        [pageSize]="10"
-        [pageSizeOptions]="[5, 10, 20]"
-        showFirstLastButtons
-      ></mat-paginator>
-
       @if (filteredCompanies().length === 0) {
         <div class="no-results">No results found</div>
       }
@@ -154,21 +154,22 @@ import { MatInputModule } from '@angular/material/input';
       display: flex;
       gap: 10px;
     }
-    .search-bar {
+    .table-toolbar {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin: 10px 0 20px 0;
-      padding: 6px 10px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      width: 260px;
+      padding: 0 8px;
+      margin-bottom: 10px;
+      background: var(--mat-sys-surface);
     }
-    .search-bar input {
-      border: none;
-      outline: none;
-      flex: 1;
-      font-size: 14px;
+    .search-field {
+      width: 260px;
+      flex-shrink: 0;
+    }
+    .spacer {
+      flex: 1 1 auto;
+    }
+    .table-toolbar .mat-mdc-paginator {
+      padding: 0;
     }
     .select-header {
       position: relative;
@@ -192,23 +193,6 @@ import { MatInputModule } from '@angular/material/input';
     .actions-right {
       text-align: right;
     }
-    .search-field {
-  width: 260px;
-  flex-shrink: 0;
-}
-
-.search-field .mat-mdc-form-field-flex {
-  width: 100%;
-}
-
-.search-field .mat-mdc-form-field-infix {
-  width: 100%;
-}
-
-.search-field .mat-mdc-form-field-suffix {
-  flex: 0 0 auto;
-}
-
   `
 })
 export class Companies implements OnInit {
@@ -234,7 +218,6 @@ export class Companies implements OnInit {
     effect(() => {
       const sort = this.sort();
       if (!sort) return;
-
       sort.sortChange.subscribe(() => {
         this.applySort();
         this.applyPagination();
@@ -244,9 +227,7 @@ export class Companies implements OnInit {
     effect(() => {
       const paginator = this.paginator();
       if (!paginator) return;
-
       this.applyPagination();
-
       paginator.page.subscribe(() => {
         this.applyPagination();
       });
@@ -259,13 +240,11 @@ export class Companies implements OnInit {
 
   load() {
     this.loading.set(true);
-
     this.service.getAll().subscribe({
       next: (data) => {
         this.companies = data;
         this.selection.clear();
         this.loading.set(false);
-
         this.applyFilter();
         this.applySort();
         this.applyPagination();
@@ -283,12 +262,10 @@ export class Companies implements OnInit {
 
   applyFilter() {
     const term = this.search();
-
     if (!term) {
       this.filteredCompanies.set([...this.companies]);
       return;
     }
-
     this.filteredCompanies.set(
       this.companies.filter(c =>
         c.name.toLowerCase().includes(term)
@@ -299,33 +276,26 @@ export class Companies implements OnInit {
   applySort() {
     const sort = this.sort();
     if (!sort) return;
-
     const { active, direction } = sort;
-
     let data = [...this.filteredCompanies()];
-
     if (direction) {
       data.sort((a, b) => {
         const valueA = (a as any)[active] ?? '';
         const valueB = (b as any)[active] ?? '';
-
         return direction === 'asc'
           ? valueA.localeCompare(valueB)
           : valueB.localeCompare(valueA);
       });
     }
-
     this.filteredCompanies.set(data);
   }
 
   applyPagination() {
     const paginator = this.paginator();
     if (!paginator) return;
-
     const data = this.filteredCompanies();
     const start = paginator.pageIndex * paginator.pageSize;
     const end = start + paginator.pageSize;
-
     this.displayedCompanies.set(data.slice(start, end));
   }
 
@@ -339,7 +309,6 @@ export class Companies implements OnInit {
 
   toggleSelectAll(checked: boolean) {
     const pageItems = this.displayedCompanies();
-
     if (checked) {
       pageItems.forEach(c => this.selection.add(c.id));
     } else {
@@ -355,13 +324,11 @@ export class Companies implements OnInit {
   isIndeterminate() {
     const pageItems = this.displayedCompanies();
     const selectedOnPage = pageItems.filter(c => this.selection.has(c.id)).length;
-
     return selectedOnPage > 0 && selectedOnPage < pageItems.length;
   }
 
   confirmBulkDelete() {
     const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
-
     ref.afterClosed().subscribe(result => {
       if (!result) return;
       this.bulkDelete();
@@ -370,7 +337,6 @@ export class Companies implements OnInit {
 
   bulkDelete() {
     const ids = Array.from(this.selection);
-
     this.service.bulkDelete(ids).subscribe({
       next: () => {
         this.snackBar.open('Selected companies deleted!', 'Close', {
@@ -379,7 +345,6 @@ export class Companies implements OnInit {
           verticalPosition: 'top',
           panelClass: ['snackbar-success']
         });
-
         this.selection.clear();
         this.load();
       },
@@ -396,10 +361,8 @@ export class Companies implements OnInit {
 
   confirmDelete(company: Company) {
     const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
-
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-
       this.service.delete(company.id).subscribe({
         next: () => {
           this.snackBar.open('Company deleted successfully!', 'Close', {
@@ -424,10 +387,8 @@ export class Companies implements OnInit {
 
   openCreateDialog() {
     const ref = this.dialog.open(CreateCompanyDialog, { width: '400px' });
-
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-
       this.service.create(result).subscribe({
         next: () => {
           this.snackBar.open('Company created successfully!', 'Close', {
@@ -455,10 +416,8 @@ export class Companies implements OnInit {
       width: '400px',
       data: { name: company.name }
     });
-
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-
       this.service.update(company.id, result).subscribe({
         next: () => {
           this.snackBar.open('Company updated successfully!', 'Close', {
