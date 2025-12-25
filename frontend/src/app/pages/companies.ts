@@ -57,7 +57,6 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
         class="mat-elevation-z2"
       >
 
-        <!-- Select Column -->
 <ng-container matColumnDef="select">
   <th mat-header-cell *matHeaderCellDef class="select-header">
     <div class="select-wrapper">
@@ -83,14 +82,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
   </td>
 </ng-container>
 
-
-        <!-- Name Column -->
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
           <td mat-cell *matCellDef="let c">{{ c.name }}</td>
         </ng-container>
 
-        <!-- Actions Column -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef class="actions-right">Actions</th>
           <td mat-cell *matCellDef="let c" class="actions-right">
@@ -133,27 +129,27 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
       gap: 10px;
       position: relative;
     }
-.select-header {
-  position: relative;
-}
+    .select-header {
+    position: relative;
+    }
 
-.select-wrapper {
-  position: relative;
-  display: inline-block;
-}
+    .select-wrapper {
+    position: relative;
+    display: inline-block;
+    }
 
-.badge {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  background: #d32f2f;
-  color: white;
-  border-radius: 50%;
-  padding: 2px 4px;
-  font-size: 10px;
-  line-height: 1;
-  pointer-events: none;
-}
+    .badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    background: #d32f2f;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 4px;
+    font-size: 10px;
+    line-height: 1;
+    pointer-events: none;
+    }
 
     .actions-right {
       text-align: right;
@@ -177,7 +173,6 @@ export class Companies implements OnInit {
   paginator = viewChild(MatPaginator);
 
   constructor() {
-    // Sorting effect
     effect(() => {
       const sort = this.sort();
       if (!sort) return;
@@ -188,7 +183,6 @@ export class Companies implements OnInit {
       });
     });
 
-    // Pagination effect
     effect(() => {
       const paginator = this.paginator();
       if (!paginator) return;
@@ -221,7 +215,6 @@ export class Companies implements OnInit {
     });
   }
 
-  // Sorting
   applySort() {
     const sort = this.sort();
     if (!sort) return;
@@ -243,7 +236,6 @@ export class Companies implements OnInit {
     });
   }
 
-  // Pagination
   applyPagination() {
     const paginator = this.paginator();
     if (!paginator) return;
@@ -254,7 +246,6 @@ export class Companies implements OnInit {
     this.displayedCompanies.set(this.companies.slice(start, end));
   }
 
-  // Selection logic
   toggleSelection(company: Company) {
     if (this.selection.has(company.id)) {
       this.selection.delete(company.id);
@@ -285,7 +276,6 @@ export class Companies implements OnInit {
     return selectedOnPage > 0 && selectedOnPage < pageItems.length;
   }
 
-  // Bulk delete
   confirmBulkDelete() {
     const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
 
@@ -321,7 +311,6 @@ export class Companies implements OnInit {
     });
   }
 
-  // Single delete
   confirmDelete(company: Company) {
     const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
 
