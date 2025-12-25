@@ -9,6 +9,7 @@ import { UsersService, User } from '../services/users.service';
 import { CreateUserDialog } from '../components/create-user-dialog';
 import { ConfirmDialog } from '../components/confirm-dialog';
 import { EditUserDialog } from '../components/edit-user-dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-users',
@@ -20,13 +21,14 @@ import { EditUserDialog } from '../components/edit-user-dialog';
     MatSortModule,
     MatButtonModule,
     MatIconModule,
-    MatDialogModule
+    MatDialogModule,
+    MatSnackBarModule
   ],
   template: `
     <div class="header">
       <h2>Users</h2>
 
-      <button mat-fab color="primary" (click)="openCreateDialog()">
+      <button mat-mini-fab color="primary" (click)="openCreateDialog()">
         <mat-icon>add</mat-icon>
       </button>
     </div>
@@ -93,6 +95,7 @@ import { EditUserDialog } from '../components/edit-user-dialog';
 export class Users implements OnInit {
   private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
   displayedColumns = ['email', 'emailConfirmed', 'actions'];
 
@@ -117,33 +120,62 @@ export class Users implements OnInit {
     });
   }
 
-  openCreateDialog() {
+    openCreateDialog() {
     const dialogRef = this.dialog.open(CreateUserDialog, {
-      width: '400px'
+        width: '400px'
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.usersService.create(result).subscribe(() => {
-          this.loadUsers();
+        if (result) {
+        this.usersService.create(result).subscribe({
+            next: () => {
+            this.snackBar.open('User created successfully!', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'right',
+                verticalPosition: 'top',
+                panelClass: ['snackbar-success']
+            });
+            this.loadUsers();
+            },
+            error: (err) => {
+            this.snackBar.open(err.error?.message || 'Failed to create user', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'right',
+                verticalPosition: 'top',
+                panelClass: ['snackbar-error']
+            });
+            }
         });
-      }
+        }
     });
-  }
+    }
 
   openEditDialog(user: User) {
     const dialogRef = this.dialog.open(EditUserDialog, {
       width: '400px',
-      data: { email: user.email }
+      data: { email: user.email, emailConfirmed: user.emailConfirmed }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.usersService.update(user.id, {
-          email: result.email,
-          emailConfirmed: user.emailConfirmed
-        }).subscribe(() => {
-          this.loadUsers();
+        this.usersService.update(user.id, result).subscribe({
+        next: () => {
+            this.snackBar.open('User updated successfully!', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'right',
+                verticalPosition: 'top',
+                panelClass: ['snackbar-success']
+            });
+            this.loadUsers();
+        },
+        error: (err) => {
+            this.snackBar.open(err.error?.message || 'Failed to update user', 'Close', {
+                duration: 3000,
+                horizontalPosition: 'right',
+                verticalPosition: 'top',
+                panelClass: ['snackbar-error']
+            });
+        }
         });
       }
     });
@@ -161,9 +193,26 @@ export class Users implements OnInit {
     });
   }
 
-  deleteUser(id: number) {
-    this.usersService.delete(id).subscribe(() => {
-      this.loadUsers();
+    deleteUser(id: number) {
+    this.usersService.delete(id).subscribe({
+        next: () => {
+        this.snackBar.open('User deleted successfully!', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top',
+            panelClass: ['snackbar-success']
+        });
+        this.loadUsers();
+        },
+        error: (err) => {
+        this.snackBar.open(err.error?.message || 'Failed to delete user', 'Close', {
+            duration: 3000,
+            horizontalPosition: 'right',
+            verticalPosition: 'top',
+            panelClass: ['snackbar-error']
+        });
+        }
     });
-  }
+    }
+
 }

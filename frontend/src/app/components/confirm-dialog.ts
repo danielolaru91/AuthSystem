@@ -18,12 +18,6 @@ import { MatButtonModule } from '@angular/material/button';
       <button mat-button (click)="close(false)">Cancel</button>
       <button mat-flat-button color="warn" (click)="close(true)">Yes</button>
     </div>
-  `,
-  styles: `
-      :host {
-        display:block;
-        padding:20px;
-    }
   `
 })
 export class ConfirmDialog {

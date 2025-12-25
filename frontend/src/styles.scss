@@ -37,6 +37,7 @@ body {
 }
 /* You can add global styles to this file, and also import other style files */
 
+/* Snackbar styling */
 .snackbar-error .mat-mdc-snackbar-surface {
   background-color: rgb(117, 20, 20) !important;
   color: white;
@@ -46,3 +47,24 @@ body {
   background-color: rgb(20, 117, 46) !important;
   color: white;
 }
+
+/* Dialogs styling */
+.mat-mdc-dialog-surface {
+  padding: 20px;
+}
+
+div[mat-dialog-actions] {
+  margin-top:10px;
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+}
+
+/* No results */
+.no-results {
+  padding: 15px;
+  background: white;
+}
+
+/* Table action column */
+.mat-column-actions { text-align: right !important; } 

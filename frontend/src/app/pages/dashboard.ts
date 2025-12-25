@@ -33,6 +33,11 @@ import { AuthService } from '../services/auth.service';
           <mat-icon matListItemIcon>group</mat-icon>
           <span matListItemTitle>Users</span>
         </a>
+
+        <a mat-list-item routerLink="/dashboard/companies" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon matListItemIcon>business_center</mat-icon>
+          <span matListItemTitle>Companies</span>
+        </a>
       </mat-nav-list>
     </mat-sidenav>
 

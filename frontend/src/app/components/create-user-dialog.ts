@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 
 @Component({
   selector: 'app-create-user-dialog',
@@ -13,12 +14,13 @@ import { MatButtonModule } from '@angular/material/button';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    MatCheckboxModule
   ],
   template: `
     <h2 mat-dialog-title>Create User</h2>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" mat-dialog-content>
+    <form [formGroup]="form" mat-dialog-content>
 
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Email</mat-label>
@@ -30,6 +32,10 @@ import { MatButtonModule } from '@angular/material/button';
         <input matInput type="password" formControlName="password" />
       </mat-form-field>
 
+      <mat-checkbox formControlName="emailConfirmed">
+        Email Confirmed
+      </mat-checkbox>
+
     </form>
 
     <div mat-dialog-actions align="end">
@@ -40,10 +46,6 @@ import { MatButtonModule } from '@angular/material/button';
     </div>
   `,
   styles: `
-    :host {
-        display:block;
-        padding:20px;
-    }
     .full-width {
       width: 100%;
     }
@@ -55,7 +57,8 @@ export class CreateUserDialog {
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required]
+    password: ['', Validators.required],
+    emailConfirmed: [false]
   });
 
   submit() {

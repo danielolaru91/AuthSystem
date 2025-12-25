@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
 using backend.Data;
 using backend.Dtos;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Controllers
 {
@@ -12,10 +15,12 @@ namespace backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly EmailService _emailService;
 
-        public UsersController(AppDbContext context)
+        public UsersController(AppDbContext context, EmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         // GET: api/users
@@ -55,12 +60,38 @@ namespace backend.Controllers
         [HttpPost]
         public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto dto)
         {
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+                return Conflict(new { Success = false, Message = "Email already exists" });
+
             var user = new User
             {
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                EmailConfirmed = false
+                EmailConfirmed = dto.EmailConfirmed
             };
+
+            // If NOT confirmed → generate token + send email
+            if (!dto.EmailConfirmed)
+            {
+                var tokenBytes = RandomNumberGenerator.GetBytes(64);
+                var emailToken = Base64UrlEncoder.Encode(tokenBytes);
+
+                user.EmailConfirmationToken = emailToken;
+                user.EmailConfirmationExpires = DateTime.UtcNow.AddHours(24);
+
+                var confirmUrl = $"http://localhost:4200/confirm-email?token={emailToken}";
+
+                var subject = "Confirm your email address";
+                var html = $@"
+                    <p>Hello,</p>
+                    <p>Your account has been created by an administrator.</p>
+                    <p>Please confirm your email by clicking the link below:</p>
+                    <p><a href=""{confirmUrl}"">Confirm Email</a></p>
+                    <p>This link expires in 24 hours.</p>
+                ";
+
+                await _emailService.SendEmailAsync(user.Email, subject, html);
+            }
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
