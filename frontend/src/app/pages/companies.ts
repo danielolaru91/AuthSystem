@@ -11,6 +11,8 @@ import { ConfirmDialog } from '../components/confirm-dialog';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormField, MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from '@angular/material/input';
 
 @Component({
   selector: 'app-companies',
@@ -21,8 +23,11 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatIconModule,
     MatSortModule,
     MatPaginatorModule,
-    MatCheckboxModule
-  ],
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatFormField,
+    MatInputModule
+],
   template: `
     <div class="header">
       <h2>Companies</h2>
@@ -37,12 +42,35 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           color="warn"
           [disabled]="selection.size === 0"
           (click)="confirmBulkDelete()"
-          class="bulk-btn"
         >
           <mat-icon>delete</mat-icon>
         </button>
       </div>
     </div>
+
+<mat-form-field appearance="fill" class="search-field">
+  <mat-label>Search companies</mat-label>
+
+  <input
+    matInput
+    [value]="search()"
+    (input)="onSearch($event.target.value)"
+  />
+
+  <ng-container matSuffix>
+    @if(search()){
+    <button
+      mat-icon-button
+      aria-label="Clear"
+      (click)="onSearch('')"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+    }
+  </ng-container>
+</mat-form-field>
+
+
 
     @if (loading()) {
       <div>Loading companies...</div>
@@ -57,30 +85,28 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
         class="mat-elevation-z2"
       >
 
-<ng-container matColumnDef="select">
-  <th mat-header-cell *matHeaderCellDef class="select-header">
-    <div class="select-wrapper">
-      <mat-checkbox
-        (change)="toggleSelectAll($event.checked)"
-        [checked]="isAllSelected()"
-        [indeterminate]="isIndeterminate()"
-      ></mat-checkbox>
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef class="select-header">
+            <div class="select-wrapper">
+              <mat-checkbox
+                (change)="toggleSelectAll($event.checked)"
+                [checked]="isAllSelected()"
+                [indeterminate]="isIndeterminate()"
+              ></mat-checkbox>
 
-      @if(selection.size > 0) {
-      <span class="badge">
-        {{ selection.size }}
-      </span>
-      }
-    </div>
-  </th>
+              @if(selection.size > 0) {
+                <span class="badge">{{ selection.size }}</span>
+              }
+            </div>
+          </th>
 
-  <td mat-cell *matCellDef="let c">
-    <mat-checkbox
-      (change)="toggleSelection(c)"
-      [checked]="selection.has(c.id)"
-    ></mat-checkbox>
-  </td>
-</ng-container>
+          <td mat-cell *matCellDef="let c">
+            <mat-checkbox
+              (change)="toggleSelection(c)"
+              [checked]="selection.has(c.id)"
+            ></mat-checkbox>
+          </td>
+        </ng-container>
 
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
@@ -107,13 +133,13 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 
       <mat-paginator
         #paginator
-        [length]="companies.length"
+        [length]="filteredCompanies().length"
         [pageSize]="10"
         [pageSizeOptions]="[5, 10, 20]"
         showFirstLastButtons
       ></mat-paginator>
 
-      @if (companies.length === 0) {
+      @if (filteredCompanies().length === 0) {
         <div class="no-results">No results found</div>
       }
     }
@@ -127,33 +153,62 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     .actions {
       display: flex;
       gap: 10px;
-      position: relative;
+    }
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 20px 0;
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      width: 260px;
+    }
+    .search-bar input {
+      border: none;
+      outline: none;
+      flex: 1;
+      font-size: 14px;
     }
     .select-header {
-    position: relative;
+      position: relative;
     }
-
     .select-wrapper {
-    position: relative;
-    display: inline-block;
+      position: relative;
+      display: inline-block;
     }
-
     .badge {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    background: #d32f2f;
-    color: white;
-    border-radius: 50%;
-    padding: 2px 4px;
-    font-size: 10px;
-    line-height: 1;
-    pointer-events: none;
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      background: #d32f2f;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 4px;
+      font-size: 10px;
+      line-height: 1;
+      pointer-events: none;
     }
-
     .actions-right {
       text-align: right;
     }
+    .search-field {
+  width: 260px;
+  flex-shrink: 0;
+}
+
+.search-field .mat-mdc-form-field-flex {
+  width: 100%;
+}
+
+.search-field .mat-mdc-form-field-infix {
+  width: 100%;
+}
+
+.search-field .mat-mdc-form-field-suffix {
+  flex: 0 0 auto;
+}
+
   `
 })
 export class Companies implements OnInit {
@@ -162,8 +217,11 @@ export class Companies implements OnInit {
   private snackBar = inject(MatSnackBar);
 
   companies: Company[] = [];
+  filteredCompanies = signal<Company[]>([]);
   displayedCompanies = signal<Company[]>([]);
   loading = signal(false);
+
+  search = signal('');
 
   selection = new Set<number>();
 
@@ -208,11 +266,34 @@ export class Companies implements OnInit {
         this.selection.clear();
         this.loading.set(false);
 
+        this.applyFilter();
         this.applySort();
         this.applyPagination();
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  onSearch(value: string) {
+    this.search.set(value.toLowerCase());
+    this.applyFilter();
+    this.applySort();
+    this.applyPagination();
+  }
+
+  applyFilter() {
+    const term = this.search();
+
+    if (!term) {
+      this.filteredCompanies.set([...this.companies]);
+      return;
+    }
+
+    this.filteredCompanies.set(
+      this.companies.filter(c =>
+        c.name.toLowerCase().includes(term)
+      )
+    );
   }
 
   applySort() {
@@ -221,29 +302,31 @@ export class Companies implements OnInit {
 
     const { active, direction } = sort;
 
-    if (!direction) {
-      this.companies = [...this.companies];
-      return;
+    let data = [...this.filteredCompanies()];
+
+    if (direction) {
+      data.sort((a, b) => {
+        const valueA = (a as any)[active] ?? '';
+        const valueB = (b as any)[active] ?? '';
+
+        return direction === 'asc'
+          ? valueA.localeCompare(valueB)
+          : valueB.localeCompare(valueA);
+      });
     }
 
-    this.companies = [...this.companies].sort((a, b) => {
-      const valueA = (a as any)[active] ?? '';
-      const valueB = (b as any)[active] ?? '';
-
-      return direction === 'asc'
-        ? valueA.localeCompare(valueB)
-        : valueB.localeCompare(valueA);
-    });
+    this.filteredCompanies.set(data);
   }
 
   applyPagination() {
     const paginator = this.paginator();
     if (!paginator) return;
 
+    const data = this.filteredCompanies();
     const start = paginator.pageIndex * paginator.pageSize;
     const end = start + paginator.pageSize;
 
-    this.displayedCompanies.set(this.companies.slice(start, end));
+    this.displayedCompanies.set(data.slice(start, end));
   }
 
   toggleSelection(company: Company) {
