@@ -37,6 +37,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
           color="warn"
           [disabled]="selection.size === 0"
           (click)="confirmBulkDelete()"
+          class="bulk-btn"
         >
           <mat-icon>delete</mat-icon>
         </button>
@@ -57,21 +58,31 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
       >
 
         <!-- Select Column -->
-        <ng-container matColumnDef="select">
-          <th mat-header-cell *matHeaderCellDef>
-            <mat-checkbox
-              (change)="toggleSelectAll($event.checked)"
-              [checked]="isAllSelected()"
-              [indeterminate]="isIndeterminate()"
-            ></mat-checkbox>
-          </th>
-          <td mat-cell *matCellDef="let c">
-            <mat-checkbox
-              (change)="toggleSelection(c)"
-              [checked]="selection.has(c.id)"
-            ></mat-checkbox>
-          </td>
-        </ng-container>
+<ng-container matColumnDef="select">
+  <th mat-header-cell *matHeaderCellDef class="select-header">
+    <div class="select-wrapper">
+      <mat-checkbox
+        (change)="toggleSelectAll($event.checked)"
+        [checked]="isAllSelected()"
+        [indeterminate]="isIndeterminate()"
+      ></mat-checkbox>
+
+      @if(selection.size > 0) {
+      <span class="badge">
+        {{ selection.size }}
+      </span>
+      }
+    </div>
+  </th>
+
+  <td mat-cell *matCellDef="let c">
+    <mat-checkbox
+      (change)="toggleSelection(c)"
+      [checked]="selection.has(c.id)"
+    ></mat-checkbox>
+  </td>
+</ng-container>
+
 
         <!-- Name Column -->
         <ng-container matColumnDef="name">
@@ -120,7 +131,30 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     .actions {
       display: flex;
       gap: 10px;
+      position: relative;
     }
+.select-header {
+  position: relative;
+}
+
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: #d32f2f;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: none;
+}
+
     .actions-right {
       text-align: right;
     }
@@ -230,19 +264,25 @@ export class Companies implements OnInit {
   }
 
   toggleSelectAll(checked: boolean) {
+    const pageItems = this.displayedCompanies();
+
     if (checked) {
-      this.selection = new Set(this.companies.map(c => c.id));
+      pageItems.forEach(c => this.selection.add(c.id));
     } else {
-      this.selection.clear();
+      pageItems.forEach(c => this.selection.delete(c.id));
     }
   }
 
   isAllSelected() {
-    return this.selection.size === this.companies.length && this.companies.length > 0;
+    const pageItems = this.displayedCompanies();
+    return pageItems.length > 0 && pageItems.every(c => this.selection.has(c.id));
   }
 
   isIndeterminate() {
-    return this.selection.size > 0 && this.selection.size < this.companies.length;
+    const pageItems = this.displayedCompanies();
+    const selectedOnPage = pageItems.filter(c => this.selection.has(c.id)).length;
+
+    return selectedOnPage > 0 && selectedOnPage < pageItems.length;
   }
 
   // Bulk delete
