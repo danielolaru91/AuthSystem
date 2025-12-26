@@ -1,4 +1,7 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 using backend.Data;
 using backend.Dtos;
 using backend.DTOs;
@@ -16,11 +19,13 @@ namespace backend.Controllers
     {
         private readonly AppDbContext _context;
         private readonly EmailService _emailService;
+        private readonly IConfiguration _config;
 
-        public UsersController(AppDbContext context, EmailService emailService)
+        public UsersController(AppDbContext context, EmailService emailService, IConfiguration config)
         {
             _context = context;
             _emailService = emailService;
+            _config = config;
         }
 
         // GET: api/users
@@ -121,12 +126,13 @@ namespace backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UpdateUserDto dto)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
                 return NotFound();
 
-            // Validate role
             if (!await _context.Roles.AnyAsync(r => r.Id == dto.RoleId))
                 return BadRequest(new { Success = false, Message = "Invalid role" });
 
@@ -136,8 +142,52 @@ namespace backend.Controllers
 
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            await _context.Entry(user).Reference(u => u.Role).LoadAsync();
+
+            if (Request.Cookies.TryGetValue("auth_token", out var token))
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(token);
+                var currentUserId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+                if (currentUserId == user.Id.ToString())
+                {
+                    var keyString = _config["Jwt:Key"];
+                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+
+                    var claims = new[]
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                        new Claim(ClaimTypes.Email, user.Email),
+                        new Claim(ClaimTypes.Role, user.Role.Name)
+                    };
+
+                    var newToken = new JwtSecurityToken(
+                        issuer: "backend",
+                        audience: "frontend",
+                        claims: claims,
+                        expires: DateTime.UtcNow.AddHours(2),
+                        signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+                    );
+
+                    var jwtString = handler.WriteToken(newToken);
+
+                    Response.Cookies.Append("auth_token", jwtString, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = false,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = DateTimeOffset.UtcNow.AddHours(2),
+                        Path = "/"
+                    });
+
+                    return Ok(new { updatedOwnAccount = true, role = user.Role.Name });
+                }
+            }
+
+            return Ok(new { updatedOwnAccount = false });
         }
+
 
         // DELETE: api/users/5
         [HttpDelete("{id}")]

@@ -178,20 +178,17 @@ export class Users implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-          if (user.email === this.authService.currentUserEmail()) {
-            const newRoleName = this.rolesService.roles().find(r => r.id === result.roleId)?.name;
-            if (newRoleName) {
-              this.authService.updateCurrentUserRole(newRoleName);
-            }
-          }
         this.usersService.update(user.id, result).subscribe({
-        next: () => {
+        next: (response:any) => {
             this.snackBar.open('User updated successfully!', 'Close', {
                 duration: 3000,
                 horizontalPosition: 'right',
                 verticalPosition: 'top',
                 panelClass: ['snackbar-success']
             });
+            if (response.updatedOwnAccount) {
+              this.authService.updateCurrentUserRole(response.role);
+            }
             this.loadUsers();
         },
         error: (err) => {

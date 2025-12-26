@@ -15,7 +15,6 @@ export class AuthService {
   private readonly _http = inject(HttpClient);
   private readonly _apiUrl = environment.apiUrl;
 
-  token = signal<string | null>(null);
   role = signal<string | null>(null);
   currentUserEmail = signal<string | null>(null);
 
@@ -39,8 +38,8 @@ export class AuthService {
   }
 
   logout() {
-    this.token.set(null);
     this.role.set(null);
+    this.currentUserEmail.set(null);
 
     return this._http.post(`${this._apiUrl}/auth/logout`, {}, { withCredentials: true });
   }
@@ -62,7 +61,11 @@ export class AuthService {
   }
 
   updateCurrentUserRole(newRole: string) {
-  this.role.set(newRole);
-}
+    this.role.set(newRole);
+  }
 
+  restoreSession(email: string, role: string) {
+    this.currentUserEmail.set(email);
+    this.role.set(role);
+  }
 }

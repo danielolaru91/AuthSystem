@@ -42,7 +42,7 @@ export class UsersService {
   }
 
   update(id: number, dto: UpdateUserDto): Observable<void> {
-    return this._http.put<void>(`${this._apiUrl}/${id}`, dto);
+    return this._http.put<void>(`${this._apiUrl}/${id}`, dto, { withCredentials: true });
   }
 
   delete(id: number): Observable<void> {

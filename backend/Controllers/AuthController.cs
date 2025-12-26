@@ -110,7 +110,8 @@ namespace backend.Controllers
                 HttpOnly = true,
                 Secure = false,
                 SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddHours(2)
+                Expires = DateTimeOffset.UtcNow.AddHours(2),
+                Path = "/"
             });
 
             return Ok(new 
@@ -120,38 +121,30 @@ namespace backend.Controllers
             });
         }
 
-[HttpGet("me")]
-public async Task<IActionResult> Me()
-{
-    if (!Request.Cookies.TryGetValue("auth_token", out var token))
-        return Unauthorized();
+        [HttpGet("me")]
+        public IActionResult Me()
+        {
+            if (!Request.Cookies.TryGetValue("auth_token", out var token))
+                return Unauthorized();
 
-    var handler = new JwtSecurityTokenHandler();
-    var jwt = handler.ReadJwtToken(token);
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
 
-    var userId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var role = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            var userId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-    if (userId == null)
-        return Unauthorized();
+            if (email == null || role == null)
+                return Unauthorized();
 
-    // ⭐ Load the user fresh from the database
-    var user = await _context.Users
-        .Include(u => u.Role)
-        .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
-
-    if (user == null)
-        return Unauthorized();
-
-    return Ok(new
-    {
-        authenticated = true,
-        email = user.Email,
-        role = user.Role.Name,   // ⭐ Always fresh, never stale
-        userId = user.Id
-    });
-}
-
-
+            return Ok(new 
+            {
+                authenticated = true,
+                email,
+                role,
+                userId
+            });
+        }
 
         [HttpPost("logout")]
         public IActionResult Logout()
