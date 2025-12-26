@@ -121,10 +121,8 @@ export class Users implements OnInit {
   loading = signal(false);
 
   private rolesService = inject(RolesService); 
-  roles = signal<{ id: number; name: string }[]>([]);
 
   ngOnInit() {
-    this.rolesService.getRoles().subscribe(r => this.roles.set(r));
     this.loadUsers();
   }
 
@@ -243,6 +241,6 @@ export class Users implements OnInit {
     });
     }
 
-    mapRole(roleId: number): string { const role = this.roles().find(r => r.id === roleId); return role ? role.name : 'Unknown'; }
+    mapRole(roleId: number): string { const role = this.rolesService.roles().find(r => r.id === roleId); return role ? role.name : 'Unknown'; }
 
 }

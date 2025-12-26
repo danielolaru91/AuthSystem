@@ -120,14 +120,38 @@ namespace backend.Controllers
             });
         }
 
-        [HttpGet("me")]
-        public IActionResult Me()
-        {
-            if (!Request.Cookies.ContainsKey("auth_token"))
-                return Unauthorized();
+[HttpGet("me")]
+public async Task<IActionResult> Me()
+{
+    if (!Request.Cookies.TryGetValue("auth_token", out var token))
+        return Unauthorized();
 
-            return Ok(new { authenticated = true });
-        }
+    var handler = new JwtSecurityTokenHandler();
+    var jwt = handler.ReadJwtToken(token);
+
+    var userId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+
+    if (userId == null)
+        return Unauthorized();
+
+    // ⭐ Load the user fresh from the database
+    var user = await _context.Users
+        .Include(u => u.Role)
+        .FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+
+    if (user == null)
+        return Unauthorized();
+
+    return Ok(new
+    {
+        authenticated = true,
+        email = user.Email,
+        role = user.Role.Name,   // ⭐ Always fresh, never stale
+        userId = user.Id
+    });
+}
+
+
 
         [HttpPost("logout")]
         public IActionResult Logout()

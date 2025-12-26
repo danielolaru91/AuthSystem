@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { CanRoleDirective } from '../directives/canRole.directive';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,8 @@ import { AuthService } from '../services/auth.service';
     MatListModule,
     MatButtonModule,
     MatIconModule,
-    RouterModule
+    RouterModule,
+    CanRoleDirective
   ],
   template: `
   <mat-sidenav-container class="layout-container">
@@ -34,7 +36,7 @@ import { AuthService } from '../services/auth.service';
           <span matListItemTitle>Users</span>
         </a>
 
-        <a mat-list-item routerLink="/dashboard/companies" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <a *canRole="['SuperAdmin']" mat-list-item routerLink="/dashboard/companies" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
           <mat-icon matListItemIcon>business_center</mat-icon>
           <span matListItemTitle>Companies</span>
         </a>
