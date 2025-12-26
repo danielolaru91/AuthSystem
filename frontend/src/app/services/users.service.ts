@@ -7,16 +7,19 @@ export interface User {
   id: number;
   email: string;
   emailConfirmed: boolean;
+  roleId: number;
 }
 
 export interface CreateUserDto {
   email: string;
   password: string;
+  roleId: number;
 }
 
 export interface UpdateUserDto {
   email: string;
   emailConfirmed: boolean;
+  roleId: number;
 }
 
 @Injectable({

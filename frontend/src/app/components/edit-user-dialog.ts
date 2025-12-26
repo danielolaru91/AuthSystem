@@ -1,11 +1,13 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
 import { Inject } from '@angular/core';
+import { RolesService } from '../services/roles.service';
 
 @Component({
   selector: 'app-edit-user-dialog',
@@ -16,22 +18,36 @@ import { Inject } from '@angular/core';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatSelectModule
   ],
   template: `
     <h2 mat-dialog-title>Edit User</h2>
 
     <form [formGroup]="form">
-        <div mat-dialog-content>
+      <div mat-dialog-content>
+
         <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="email" />
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Role</mat-label>
+          <mat-select formControlName="roleId">
+            @for(r of roles(); track r.id){
+            <mat-option [value]="r.id">
+              {{ r.name }}
+            </mat-option>
+            }
+          </mat-select>
         </mat-form-field>
 
         <mat-checkbox formControlName="emailConfirmed">
-            Email Confirmed
+          Email Confirmed
         </mat-checkbox>
-        </div>
+
+      </div>
     </form>
 
     <div mat-dialog-actions align="end">
@@ -50,19 +66,26 @@ import { Inject } from '@angular/core';
 export class EditUserDialog {
   private dialogRef = inject(MatDialogRef<EditUserDialog>);
   private fb = inject(FormBuilder);
+  private rolesService = inject(RolesService);
+
+  roles = signal<{ id: number; name: string }[]>([]);
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    emailConfirmed: [false]
+    emailConfirmed: [false],
+    roleId: [3, Validators.required]
   });
 
   constructor(
     @Inject(MAT_DIALOG_DATA)
-    public data: { email: string; emailConfirmed: boolean }
+    public data: { email: string; emailConfirmed: boolean; roleId: number }
   ) {
+    this.rolesService.getRoles().subscribe((r) => this.roles.set(r));
+
     this.form.patchValue({
       email: data.email,
-      emailConfirmed: data.emailConfirmed
+      emailConfirmed: data.emailConfirmed,
+      roleId: data.roleId
     });
   }
 

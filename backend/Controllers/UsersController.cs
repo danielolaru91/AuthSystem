@@ -28,11 +28,13 @@ namespace backend.Controllers
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
             var users = await _context.Users
+                .Include(u => u.Role)
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    EmailConfirmed = u.EmailConfirmed
+                    EmailConfirmed = u.EmailConfirmed,
+                    RoleId = u.RoleId
                 })
                 .ToListAsync();
 
@@ -43,7 +45,9 @@ namespace backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user == null)
                 return NotFound();
@@ -52,7 +56,8 @@ namespace backend.Controllers
             {
                 Id = user.Id,
                 Email = user.Email,
-                EmailConfirmed = user.EmailConfirmed
+                EmailConfirmed = user.EmailConfirmed,
+                RoleId = user.RoleId
             });
         }
 
@@ -63,11 +68,16 @@ namespace backend.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
                 return Conflict(new { Success = false, Message = "Email already exists" });
 
+            // Validate role
+            if (!await _context.Roles.AnyAsync(r => r.Id == dto.RoleId))
+                return BadRequest(new { Success = false, Message = "Invalid role" });
+
             var user = new User
             {
                 Email = dto.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                EmailConfirmed = dto.EmailConfirmed
+                EmailConfirmed = dto.EmailConfirmed,
+                RoleId = dto.RoleId
             };
 
             // If NOT confirmed → generate token + send email
@@ -96,11 +106,14 @@ namespace backend.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
+            await _context.Entry(user).Reference(u => u.Role).LoadAsync();
+
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, new UserDto
             {
                 Id = user.Id,
                 Email = user.Email,
-                EmailConfirmed = user.EmailConfirmed
+                EmailConfirmed = user.EmailConfirmed,
+                RoleId = user.Role.Id
             });
         }
 
@@ -113,8 +126,13 @@ namespace backend.Controllers
             if (user == null)
                 return NotFound();
 
+            // Validate role
+            if (!await _context.Roles.AnyAsync(r => r.Id == dto.RoleId))
+                return BadRequest(new { Success = false, Message = "Invalid role" });
+
             user.Email = dto.Email;
             user.EmailConfirmed = dto.EmailConfirmed;
+            user.RoleId = dto.RoleId;
 
             await _context.SaveChangesAsync();
 

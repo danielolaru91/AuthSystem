@@ -11,6 +11,9 @@ import { ConfirmDialog } from '../components/confirm-dialog';
 import { EditUserDialog } from '../components/edit-user-dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { RolesService } from '../services/roles.service';
+import { CanRoleDirective } from '../directives/canRole.directive';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-users',
@@ -24,13 +27,14 @@ import { MatProgressSpinner } from "@angular/material/progress-spinner";
     MatIconModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatProgressSpinner
+    MatProgressSpinner,
+    CanRoleDirective
 ],
   template: `
     <div class="header">
       <h2>Users</h2>
 
-      <button mat-mini-fab color="primary" (click)="openCreateDialog()">
+      <button *canRole="'SuperAdmin'" mat-mini-fab color="primary" (click)="openCreateDialog()">
         <mat-icon>add</mat-icon>
       </button>
     </div>
@@ -62,6 +66,15 @@ import { MatProgressSpinner } from "@angular/material/progress-spinner";
             {{ user.emailConfirmed ? 'Yes' : 'No' }}
           </td>
         </ng-container>
+
+        <!-- Role Column -->
+        <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
+        <td mat-cell *matCellDef="let user">
+            {{ mapRole(user.roleId) }}
+        </td>
+        </ng-container>
+
 
         <!-- Actions Column -->
         <ng-container matColumnDef="actions">
@@ -100,13 +113,18 @@ export class Users implements OnInit {
   private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private authService = inject(AuthService);
 
-  displayedColumns = ['email', 'emailConfirmed', 'actions'];
+  displayedColumns = ['email', 'emailConfirmed', 'role', 'actions'];
 
   users: User[] = [];
   loading = signal(false);
 
+  private rolesService = inject(RolesService); 
+  roles = signal<{ id: number; name: string }[]>([]);
+
   ngOnInit() {
+    this.rolesService.getRoles().subscribe(r => this.roles.set(r));
     this.loadUsers();
   }
 
@@ -157,11 +175,17 @@ export class Users implements OnInit {
   openEditDialog(user: User) {
     const dialogRef = this.dialog.open(EditUserDialog, {
       width: '400px',
-      data: { email: user.email, emailConfirmed: user.emailConfirmed }
+      data: { email: user.email, emailConfirmed: user.emailConfirmed, roleId: user.roleId }
     });
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
+          if (user.email === this.authService.currentUserEmail()) {
+            const newRoleName = this.rolesService.roles().find(r => r.id === result.roleId)?.name;
+            if (newRoleName) {
+              this.authService.updateCurrentUserRole(newRoleName);
+            }
+          }
         this.usersService.update(user.id, result).subscribe({
         next: () => {
             this.snackBar.open('User updated successfully!', 'Close', {
@@ -218,5 +242,7 @@ export class Users implements OnInit {
         }
     });
     }
+
+    mapRole(roleId: number): string { const role = this.roles().find(r => r.id === roleId); return role ? role.name : 'Unknown'; }
 
 }

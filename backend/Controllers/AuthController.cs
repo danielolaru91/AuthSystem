@@ -46,7 +46,8 @@ namespace backend.Controllers
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 EmailConfirmed = false,
                 EmailConfirmationToken = emailToken,
-                EmailConfirmationExpires = DateTime.UtcNow.AddHours(24)
+                EmailConfirmationExpires = DateTime.UtcNow.AddHours(24),
+                RoleId = 3 // "User"
             };
 
             _context.Users.Add(user);
@@ -71,11 +72,14 @@ namespace backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 return Unauthorized(new { Success = false, Message = "Invalid email or password" });
 
-            if (!user.EmailConfirmed) 
+            if (!user.EmailConfirmed)
                 return Unauthorized(new { Success = false, Message = "Please confirm your email before logging in." });
 
             var keyString = _config["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
@@ -88,6 +92,7 @@ namespace backend.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.Name)
             };
 
             var token = new JwtSecurityToken(
@@ -108,7 +113,11 @@ namespace backend.Controllers
                 Expires = DateTimeOffset.UtcNow.AddHours(2)
             });
 
-            return Ok(new { Success = true });
+            return Ok(new 
+            { 
+                Success = true,
+                Role = user.Role.Name
+            });
         }
 
         [HttpGet("me")]
@@ -135,7 +144,6 @@ namespace backend.Controllers
             if (user == null)
                 return Ok(new { Success = true });
 
-            // ⭐ Generate URL-safe token
             var tokenBytes = RandomNumberGenerator.GetBytes(64);
             var token = Base64UrlEncoder.Encode(tokenBytes);
 
@@ -197,6 +205,5 @@ namespace backend.Controllers
 
             return Ok(new { Success = true, Message = "Email confirmed successfully" });
         }
-
     }
 }

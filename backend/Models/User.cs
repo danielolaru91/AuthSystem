@@ -23,5 +23,8 @@ namespace backend.Models
         EmailConfirmationToken { get; set; } public DateTime? 
         
         EmailConfirmationExpires { get; set; }
+
+        public int RoleId { get; set; }
+        public Role Role { get; set; } = null!;
     }
 }

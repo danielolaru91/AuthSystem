@@ -1,10 +1,12 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSelectModule } from '@angular/material/select';
+import { RolesService } from '../services/roles.service';
 
 @Component({
   selector: 'app-create-user-dialog',
@@ -15,7 +17,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatSelectModule
   ],
   template: `
     <h2 mat-dialog-title>Create User</h2>
@@ -30,6 +33,17 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Password</mat-label>
         <input matInput type="password" formControlName="password" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Role</mat-label>
+        <mat-select formControlName="roleId">
+        @for(r of roles(); track r.id){
+          <mat-option [value]="r.id">
+            {{ r.name }}
+          </mat-option>
+        }
+        </mat-select>
       </mat-form-field>
 
       <mat-checkbox formControlName="emailConfirmed">
@@ -54,12 +68,21 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 export class CreateUserDialog {
   private dialogRef = inject(MatDialogRef<CreateUserDialog>);
   private fb = inject(FormBuilder);
+  private rolesService = inject(RolesService);
+
+  roles = signal<{ id: number; name: string }[]>([]);
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
-    emailConfirmed: [false]
+    emailConfirmed: [false],
+    roleId: [3, Validators.required]
   });
+
+  constructor() {
+    // Load roles on init
+    this.rolesService.getRoles().subscribe((r) => this.roles.set(r));
+  }
 
   submit() {
     if (this.form.valid) {
