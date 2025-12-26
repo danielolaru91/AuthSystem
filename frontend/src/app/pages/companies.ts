@@ -14,6 +14,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-companies',
@@ -27,7 +28,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
-    MatToolbarModule
+    MatToolbarModule,
+    MatProgressSpinnerModule
   ],
   template: `
     <div class="header">
@@ -61,7 +63,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     <ng-container matSuffix>
         @if (search()) {
-        <button mat-icon-button (click)="onSearch('')">
+        <button mat-icon-button (click)="onSearch('')" class="close-button">
             <mat-icon>close</mat-icon>
         </button>
         }
@@ -81,7 +83,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     </mat-toolbar>
 
     @if (loading()) {
-      <div>Loading companies...</div>
+    <div style="display:flex; height:100%; place-content:center;">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
     }
 
     @if (!loading()) {
@@ -157,7 +161,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     .table-toolbar {
       display: flex;
       align-items: center;
-      padding: 0 8px;
+      padding: 0;
       margin-bottom: 10px;
       background: var(--mat-sys-surface);
     }
@@ -192,6 +196,9 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     }
     .actions-right {
       text-align: right;
+    }
+    .close-button {
+        margin-right: 5px;
     }
   `
 })

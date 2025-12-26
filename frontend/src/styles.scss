@@ -16,6 +16,10 @@ html {
     typography: Roboto,
     density: 0,
   ));
+  @include mat.toolbar-overrides((
+    container-background-color: var(--mat-sys-primary),
+    container-text-color: var(--mat-sys-on-primary),
+  ));
 }
 
 body {
@@ -63,7 +67,7 @@ div[mat-dialog-actions] {
 /* No results */
 .no-results {
   padding: 15px;
-  background: white;
+  background: var(--mat-sys-surface);
 }
 
 /* Table action column */

@@ -60,12 +60,12 @@ import { AuthService } from '../services/auth.service';
   styles: `
 .layout-container {
   height: 100vh;
-  background: #f5f5f5; /* Light background for content area */
+  background: transparent; /* Light background for content area */
 }
 
 .sidenav {
   width: 220px;
-  background: #ffffff; /* White sidenav surface */
+  background: white;
   border-right: 1px solid rgba(0,0,0,0.12); /* Subtle divider */
 }
 

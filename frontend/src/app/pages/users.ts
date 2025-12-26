@@ -10,6 +10,7 @@ import { CreateUserDialog } from '../components/create-user-dialog';
 import { ConfirmDialog } from '../components/confirm-dialog';
 import { EditUserDialog } from '../components/edit-user-dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 
 @Component({
   selector: 'app-users',
@@ -22,8 +23,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatButtonModule,
     MatIconModule,
     MatDialogModule,
-    MatSnackBarModule
-  ],
+    MatSnackBarModule,
+    MatProgressSpinner
+],
   template: `
     <div class="header">
       <h2>Users</h2>
@@ -34,7 +36,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     </div>
 
     @if(loading()){
-      <div>Loading users...</div>
+    <div style="display:flex; height:100%; place-content:center;">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
     }
 
     @if(!loading()){
