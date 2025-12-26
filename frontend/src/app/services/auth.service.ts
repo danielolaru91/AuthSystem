@@ -8,6 +8,12 @@ export interface AuthModel {
   password: string;
 }
 
+export interface UserData {
+  id: number;
+  email: string;
+  role: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -15,8 +21,8 @@ export class AuthService {
   private readonly _http = inject(HttpClient);
   private readonly _apiUrl = environment.apiUrl;
 
-  role = signal<string | null>(null);
-  currentUserEmail = signal<string | null>(null);
+  // ⭐ One signal for all user data
+  user = signal<UserData | null>(null);
 
   register(credentials: AuthModel): Observable<any> {
     return this._http.post(`${this._apiUrl}/auth/register`, credentials);
@@ -24,22 +30,24 @@ export class AuthService {
 
   login(credentials: { email: string; password: string }) {
     return this._http
-      .post<{ success: boolean; role: string }>(
+      .post<{ success: boolean; role: string, userId: number }>(
         `${this._apiUrl}/auth/login`,
         credentials,
         { withCredentials: true }
       )
       .pipe(
         tap((res) => {
-          this.currentUserEmail.set(credentials.email);
-          this.role.set(res.role);
+          this.user.set({
+            id: res.userId,
+            email: credentials.email,
+            role: res.role,
+          });
         })
       );
   }
 
   logout() {
-    this.role.set(null);
-    this.currentUserEmail.set(null);
+    this.user.set(null);
 
     return this._http.post(`${this._apiUrl}/auth/logout`, {}, { withCredentials: true });
   }
@@ -57,15 +65,17 @@ export class AuthService {
   }
 
   hasRole(role: string) {
-    return this.role() === role;
+    return this.user()?.role === role;
   }
 
   updateCurrentUserRole(newRole: string) {
-    this.role.set(newRole);
+    const current = this.user();
+    if (current) {
+      this.user.set({ ...current, role: newRole });
+    }
   }
 
-  restoreSession(email: string, role: string) {
-    this.currentUserEmail.set(email);
-    this.role.set(role);
+  restoreSession(id: number, email: string, role: string) {
+    this.user.set({ id, email, role });
   }
 }

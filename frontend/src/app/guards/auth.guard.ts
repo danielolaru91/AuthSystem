@@ -10,14 +10,13 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
 
 return http
-  .get<{ authenticated: boolean; email: string; role: string }>(
+  .get<{id: number, email: string; role: string }>(
     'http://localhost:5121/api/auth/me',
     { withCredentials: true }
   )
   .pipe(
     map((user) => {
-      authService.role.set(user.role);
-      authService.currentUserEmail.set(user.email);
+      authService.user.set(user);
       return true;
     }),
     catchError(() => of(router.createUrlTree(['/login'])))

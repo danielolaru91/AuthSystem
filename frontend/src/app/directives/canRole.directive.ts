@@ -24,7 +24,7 @@ export class CanRoleDirective {
   }
 
   private updateView() {
-    const currentRole = this.auth.role();
+    const currentRole = this.auth.user()?.role;
     if (!currentRole) {
       this.vcr.clear();
       return;

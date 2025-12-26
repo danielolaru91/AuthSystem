@@ -117,7 +117,8 @@ namespace backend.Controllers
             return Ok(new 
             { 
                 Success = true,
-                Role = user.Role.Name
+                Role = user.Role.Name,
+                UserId = user.Id
             });
         }
 

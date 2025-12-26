@@ -9,7 +9,7 @@ export function roleGuard(required: string | string[]): CanActivateFn {
     const router = inject(Router);
 
     const allowedRoles = Array.isArray(required) ? required : [required];
-    const currentRole = auth.role();
+    const currentRole = auth.user()?.role;
     if (currentRole && allowedRoles.includes(currentRole)) {
         
       return true;
