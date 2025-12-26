@@ -22,7 +22,7 @@ export class AuthService {
   private readonly _apiUrl = environment.apiUrl;
 
   // ⭐ One signal for all user data
-  user = signal<UserData | null>(null);
+  user = signal<UserData | undefined>(undefined);
 
   register(credentials: AuthModel): Observable<any> {
     return this._http.post(`${this._apiUrl}/auth/register`, credentials);
@@ -47,7 +47,7 @@ export class AuthService {
   }
 
   logout() {
-    this.user.set(null);
+    this.user.set(undefined);
 
     return this._http.post(`${this._apiUrl}/auth/logout`, {}, { withCredentials: true });
   }
