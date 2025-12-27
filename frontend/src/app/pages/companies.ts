@@ -228,6 +228,7 @@ export class Companies implements OnInit {
   constructor() {
     effect(() => { 
       const companies = this.globalState.companies(); 
+      console.log(companies);
       if (companies.length > 0) { 
         this.companies = companies;
         this.loading.set(false); 
@@ -343,7 +344,7 @@ export class Companies implements OnInit {
 
   bulkDelete() {
     const ids = Array.from(this.selection);
-    this.service.bulkDelete(ids).subscribe({
+    this.dashboardData.bulkDeleteCompanies(ids).subscribe({
       next: () => {
         this.snackBar.open('Selected companies deleted!', 'Close', {
           duration: 3000,
@@ -352,7 +353,6 @@ export class Companies implements OnInit {
           panelClass: ['snackbar-success']
         });
         this.selection.clear();
-        this.dashboardData.reloadCompanies();
       },
       error: () => {
         this.snackBar.open('Failed to delete companies!', 'Close', {
@@ -369,7 +369,7 @@ export class Companies implements OnInit {
     const ref = this.dialog.open(ConfirmDialog, { width: '350px' });
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-      this.service.delete(company.id).subscribe({
+      this.dashboardData.deleteCompany(company.id).subscribe({
         next: () => {
           this.snackBar.open('Company deleted successfully!', 'Close', {
             duration: 3000,
@@ -377,7 +377,6 @@ export class Companies implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.dashboardData.reloadCompanies();
         },
         error: () => {
           this.snackBar.open('Failed to delete company!', 'Close', {
@@ -395,7 +394,7 @@ export class Companies implements OnInit {
     const ref = this.dialog.open(CreateCompanyDialog, { width: '400px' });
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-      this.service.create(result).subscribe({
+      this.dashboardData.createCompany(result).subscribe({
         next: () => {
           this.snackBar.open('Company created successfully!', 'Close', {
             duration: 3000,
@@ -403,7 +402,6 @@ export class Companies implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.dashboardData.reloadCompanies();
         },
         error: () => {
           this.snackBar.open('Failed to create company!', 'Close', {
@@ -424,7 +422,7 @@ export class Companies implements OnInit {
     });
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-      this.service.update(company.id, result).subscribe({
+      this.dashboardData.updateCompany(company.id, result).subscribe({
         next: () => {
           this.snackBar.open('Company updated successfully!', 'Close', {
             duration: 3000,
@@ -432,7 +430,6 @@ export class Companies implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.dashboardData.reloadCompanies();
         },
         error: () => {
           this.snackBar.open('Failed to update company!', 'Close', {

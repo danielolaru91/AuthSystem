@@ -426,7 +426,7 @@ export class Users implements OnInit {
   bulkDelete() {
     const ids = Array.from(this.selection);
 
-    this.usersService.bulkDelete(ids).subscribe({
+    this.dashboardData.bulkDeleteUsers(ids).subscribe({
       next: () => {
         this.snackBar.open('Selected users deleted!', 'Close', {
           duration: 3000,
@@ -436,7 +436,6 @@ export class Users implements OnInit {
         });
 
         this.selection.clear();
-        this.dashboardData.reloadUsers();
       },
       error: () => {
         this.snackBar.open('Failed to delete users!', 'Close', {
@@ -455,7 +454,7 @@ export class Users implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
 
-      this.usersService.create(result).subscribe({
+      this.dashboardData.createUser(result).subscribe({
         next: () => {
           this.snackBar.open('User created successfully!', 'Close', {
             duration: 3000,
@@ -463,7 +462,6 @@ export class Users implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.dashboardData.reloadUsers();
         },
         error: (err) => {
           this.snackBar.open(err.error?.message || 'Failed to create user', 'Close', {
@@ -486,7 +484,7 @@ export class Users implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
 
-      this.usersService.update(user.id, result).subscribe({
+      this.dashboardData.updateUser(user.id, result).subscribe({
         next: (response: any) => {
           this.snackBar.open('User updated successfully!', 'Close', {
             duration: 3000,
@@ -498,8 +496,6 @@ export class Users implements OnInit {
           if (response.updatedOwnAccount) {
             this.authService.updateCurrentUserRole(response.role);
           }
-
-          this.dashboardData.reloadUsers();
         },
         error: (err) => {
           this.snackBar.open(err.error?.message || 'Failed to update user', 'Close', {
@@ -522,7 +518,7 @@ export class Users implements OnInit {
   }
 
   deleteUser(id: number) {
-    this.usersService.delete(id).subscribe({
+    this.dashboardData.deleteUser(id).subscribe({
       next: () => {
         this.snackBar.open('User deleted successfully!', 'Close', {
           duration: 3000,
@@ -530,7 +526,6 @@ export class Users implements OnInit {
           verticalPosition: 'top',
           panelClass: ['snackbar-success']
         });
-        this.dashboardData.reloadUsers();
       },
       error: (err) => {
         this.snackBar.open(err.error?.message || 'Failed to delete user', 'Close', {
