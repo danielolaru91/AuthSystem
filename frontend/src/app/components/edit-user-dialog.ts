@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
 import { Inject } from '@angular/core';
-import { RolesService } from '../services/roles.service';
+import { GlobalStateService } from '../services/global-state.service';
 
 @Component({
   selector: 'app-edit-user-dialog',
@@ -66,9 +66,7 @@ import { RolesService } from '../services/roles.service';
 export class EditUserDialog {
   private dialogRef = inject(MatDialogRef<EditUserDialog>);
   private fb = inject(FormBuilder);
-  private rolesService = inject(RolesService);
-
-  roles = signal<{ id: number; name: string }[]>([]);
+  protected roles = inject(GlobalStateService).roles;
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -80,8 +78,6 @@ export class EditUserDialog {
     @Inject(MAT_DIALOG_DATA)
     public data: { email: string; emailConfirmed: boolean; roleId: number }
   ) {
-    this.rolesService.getRoles().subscribe((r) => this.roles.set(r));
-
     this.form.patchValue({
       email: data.email,
       emailConfirmed: data.emailConfirmed,

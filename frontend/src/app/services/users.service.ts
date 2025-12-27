@@ -48,4 +48,8 @@ export class UsersService {
   delete(id: number): Observable<void> {
     return this._http.delete<void>(`${this._apiUrl}/${id}`);
   }
+
+  bulkDelete(ids: number[]) { 
+    return this._http.post(`${this._apiUrl}/bulk-delete`, ids); 
+  }
 }

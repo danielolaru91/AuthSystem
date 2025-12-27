@@ -15,6 +15,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { DashboardDataService } from '../services/dashboard-data.service';
+import { GlobalStateService } from '../services/global-state.service';
 
 @Component({
   selector: 'app-companies',
@@ -206,6 +208,8 @@ export class Companies implements OnInit {
   private service = inject(CompaniesService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private dashboardData = inject(DashboardDataService);
+  private globalState = inject(GlobalStateService);
 
   companies: Company[] = [];
   filteredCompanies = signal<Company[]>([]);
@@ -222,42 +226,37 @@ export class Companies implements OnInit {
   paginator = viewChild(MatPaginator);
 
   constructor() {
-    effect(() => {
-      const sort = this.sort();
-      if (!sort) return;
-      sort.sortChange.subscribe(() => {
-        this.applySort();
+    effect(() => { 
+      const companies = this.globalState.companies(); 
+      if (companies.length > 0) { 
+        this.companies = companies;
+        this.loading.set(false); 
+        this.applyFilter();
         this.applyPagination();
-      });
-    });
-
-    effect(() => {
-      const paginator = this.paginator();
-      if (!paginator) return;
-      this.applyPagination();
-      paginator.page.subscribe(() => {
-        this.applyPagination();
-      });
+      } 
     });
   }
 
   ngOnInit() {
-    this.load();
+    this.dashboardData.ensureLoaded();
   }
 
-  load() {
-    this.loading.set(true);
-    this.service.getAll().subscribe({
-      next: (data) => {
-        this.companies = data;
-        this.selection.clear();
-        this.loading.set(false);
-        this.applyFilter();
-        this.applySort();
-        this.applyPagination();
-      },
-      error: () => this.loading.set(false)
+  ngAfterViewInit() {
+    // SORT
+    this.sort()?.sortChange.subscribe(() => {
+      this.applySort();
+      this.applyPagination();
     });
+
+    // PAGINATION
+    this.paginator()?.page.subscribe(() => {
+      this.applyPagination();
+    });
+
+    // INITIAL TABLE SETUP
+    this.applyFilter();
+    this.applySort();
+    this.applyPagination();
   }
 
   onSearch(value: string) {
@@ -353,7 +352,7 @@ export class Companies implements OnInit {
           panelClass: ['snackbar-success']
         });
         this.selection.clear();
-        this.load();
+        this.dashboardData.reloadCompanies();
       },
       error: () => {
         this.snackBar.open('Failed to delete companies!', 'Close', {
@@ -378,7 +377,7 @@ export class Companies implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.load();
+          this.dashboardData.reloadCompanies();
         },
         error: () => {
           this.snackBar.open('Failed to delete company!', 'Close', {
@@ -404,7 +403,7 @@ export class Companies implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.load();
+          this.dashboardData.reloadCompanies();
         },
         error: () => {
           this.snackBar.open('Failed to create company!', 'Close', {
@@ -433,7 +432,7 @@ export class Companies implements OnInit {
             verticalPosition: 'top',
             panelClass: ['snackbar-success']
           });
-          this.load();
+          this.dashboardData.reloadCompanies();
         },
         error: () => {
           this.snackBar.open('Failed to update company!', 'Close', {

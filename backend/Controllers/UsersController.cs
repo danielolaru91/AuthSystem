@@ -203,5 +203,24 @@ namespace backend.Controllers
 
             return NoContent();
         }
+
+        [HttpPost("bulk-delete")]
+        public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return BadRequest("No IDs provided.");
+
+            var users = await _context.Users
+                .Where(c => ids.Contains(c.Id))
+                .ToListAsync();
+
+            if (users.Count == 0)
+                return NotFound("No matching users found.");
+
+            _context.Users.RemoveRange(users);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

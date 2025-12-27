@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSelectModule } from '@angular/material/select';
-import { RolesService } from '../services/roles.service';
+import { GlobalStateService } from '../services/global-state.service';
 
 @Component({
   selector: 'app-create-user-dialog',
@@ -68,9 +68,7 @@ import { RolesService } from '../services/roles.service';
 export class CreateUserDialog {
   private dialogRef = inject(MatDialogRef<CreateUserDialog>);
   private fb = inject(FormBuilder);
-  private rolesService = inject(RolesService);
-
-  roles = signal<{ id: number; name: string }[]>([]);
+  protected roles = inject(GlobalStateService).roles;
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
@@ -78,11 +76,6 @@ export class CreateUserDialog {
     emailConfirmed: [false],
     roleId: [3, Validators.required]
   });
-
-  constructor() {
-    // Load roles on init
-    this.rolesService.getRoles().subscribe((r) => this.roles.set(r));
-  }
 
   submit() {
     if (this.form.valid) {
