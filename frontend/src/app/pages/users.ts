@@ -283,7 +283,6 @@ export class Users implements OnInit {
   ngAfterViewInit() {
     // SORT
     this.sort()?.sortChange.subscribe(() => {
-      this.paginator()?.firstPage();
       this.applyPagination();
     });
 
