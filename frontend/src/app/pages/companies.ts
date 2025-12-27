@@ -228,7 +228,6 @@ export class Companies implements OnInit {
   constructor() {
     effect(() => { 
       const companies = this.globalState.companies(); 
-      console.log(companies);
       if (companies.length > 0) { 
         this.companies = companies;
         this.loading.set(false); 
