@@ -244,7 +244,6 @@ export class Companies implements OnInit {
   ngAfterViewInit() {
     // SORT
     this.sort()?.sortChange.subscribe(() => {
-      this.applySort();
       this.applyPagination();
     });
 
@@ -255,14 +254,13 @@ export class Companies implements OnInit {
 
     // INITIAL TABLE SETUP
     this.applyFilter();
-    this.applySort();
     this.applyPagination();
   }
 
   onSearch(value: string) {
     this.search.set(value.toLowerCase());
     this.applyFilter();
-    this.applySort();
+    this.paginator()?.firstPage();
     this.applyPagination();
   }
 
@@ -279,30 +277,35 @@ export class Companies implements OnInit {
     );
   }
 
-  applySort() {
+  applyPagination() {
+    const paginator = this.paginator();
     const sort = this.sort();
-    if (!sort) return;
-    const { active, direction } = sort;
-    let data = [...this.filteredCompanies()];
-    if (direction) {
-      data.sort((a, b) => {
+    if (!paginator) return;
+
+    const fullData = [...this.filteredCompanies()];
+
+    // 1️⃣ PAGINATE FIRST
+    const start = paginator.pageIndex * paginator.pageSize;
+    const end = start + paginator.pageSize;
+
+    let pageData = fullData.slice(start, end);
+
+    // 2️⃣ SORT ONLY THE CURRENT PAGE
+    if (sort && sort.direction && pageData.length > 1) {
+      const { active, direction } = sort;
+
+      pageData.sort((a, b) => {
         const valueA = (a as any)[active] ?? '';
         const valueB = (b as any)[active] ?? '';
+
         return direction === 'asc'
           ? valueA.localeCompare(valueB)
           : valueB.localeCompare(valueA);
       });
     }
-    this.filteredCompanies.set(data);
-  }
 
-  applyPagination() {
-    const paginator = this.paginator();
-    if (!paginator) return;
-    const data = this.filteredCompanies();
-    const start = paginator.pageIndex * paginator.pageSize;
-    const end = start + paginator.pageSize;
-    this.displayedCompanies.set(data.slice(start, end));
+    // 3️⃣ DISPLAY
+    this.displayedCompanies.set(pageData);
   }
 
   toggleSelection(company: Company) {

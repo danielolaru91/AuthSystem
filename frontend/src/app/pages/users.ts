@@ -283,7 +283,7 @@ export class Users implements OnInit {
   ngAfterViewInit() {
     // SORT
     this.sort()?.sortChange.subscribe(() => {
-      this.applySort();
+      this.paginator()?.firstPage();
       this.applyPagination();
     });
 
@@ -294,14 +294,13 @@ export class Users implements OnInit {
 
     // INITIAL TABLE SETUP
     this.applyFilter();
-    this.applySort();
     this.applyPagination();
   }
 
   onSearch(value: string) {
     this.search.set(value.toLowerCase());
     this.applyFilter();
-    this.applySort();
+    this.paginator()?.firstPage();
     this.applyPagination();
   }
 
@@ -328,63 +327,53 @@ export class Users implements OnInit {
     );
   }
 
-  applySort() {
-    const sort = this.sort();
-    if (!sort) return;
-
-    const { active, direction } = sort;
-    let data = [...this.filteredUsers()];
-
-    if (!direction) {
-      this.filteredUsers.set(data);
-      return;
-    }
-
-    data.sort((a, b) => {
-      let valueA: string | number = '';
-      let valueB: string | number = '';
-
-      switch (active) {
-        case 'email':
-          valueA = a.email.toLowerCase();
-          valueB = b.email.toLowerCase();
-          break;
-
-        case 'role':
-          valueA = this.mapRole(a.roleId).toLowerCase();
-          valueB = this.mapRole(b.roleId).toLowerCase();
-          break;
-
-        case 'emailConfirmed':
-          valueA = a.emailConfirmed ? 1 : 0;
-          valueB = b.emailConfirmed ? 1 : 0;
-          break;
-      }
-
-      if (typeof valueA === 'string') {
-        return direction === 'asc'
-          ? valueA.localeCompare(valueB as string)
-          : (valueB as string).localeCompare(valueA);
-      }
-
-      return direction === 'asc'
-        ? (valueA as number) - (valueB as number)
-        : (valueB as number) - (valueA as number);
-    });
-
-    this.filteredUsers.set(data);
-  }
-
   applyPagination() {
     const paginator = this.paginator();
+    const sort = this.sort();
     if (!paginator) return;
 
-    const data = this.filteredUsers();
+    let fullData = [...this.filteredUsers()];
+
+    // ✅ APPLY PAGINATION
     const start = paginator.pageIndex * paginator.pageSize;
     const end = start + paginator.pageSize;
 
-    this.displayedUsers.set(data.slice(start, end));
+    let pageData = fullData.slice(start, end);
+
+    // ✅ APPLY SORT HERE
+    if (sort && sort.direction) {
+      const { active, direction } = sort;
+
+      pageData.sort((a, b) => {
+        let valueA: string | number = '';
+        let valueB: string | number = '';
+
+        switch (active) {
+          case 'email':
+            valueA = a.email.toLowerCase();
+            valueB = b.email.toLowerCase();
+            break;
+
+          case 'role':
+            valueA = this.mapRole(a.roleId).toLowerCase();
+            valueB = this.mapRole(b.roleId).toLowerCase();
+            break;
+
+          case 'emailConfirmed':
+            valueA = a.emailConfirmed ? 1 : 0;
+            valueB = b.emailConfirmed ? 1 : 0;
+            break;
+        }
+
+        return direction === 'asc'
+          ? valueA > valueB ? 1 : -1
+          : valueA < valueB ? 1 : -1;
+      });
+    }
+
+    this.displayedUsers.set(pageData);
   }
+
 
   toggleSelection(user: User) {
     if (this.selection.has(user.id)) {
