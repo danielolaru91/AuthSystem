@@ -9,6 +9,7 @@ using backend.Data;
 using backend.Models;
 using backend.Dtos;
 using backend.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace backend.Controllers
 {
@@ -122,29 +123,15 @@ namespace backend.Controllers
             });
         }
 
+        [Authorize]
         [HttpGet("me")]
         public IActionResult Me()
         {
-            if (!Request.Cookies.TryGetValue("auth_token", out var token))
-                return Unauthorized();
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
-
-            var email = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            var role = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-            var userId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
-            if (email == null || role == null)
-                return Unauthorized();
-
-            return Ok(new 
-            {
-                authenticated = true,
-                email,
-                role,
-                userId
-            });
+            return Ok(new { authenticated = true, email, role, userId });
         }
 
         [HttpPost("logout")]

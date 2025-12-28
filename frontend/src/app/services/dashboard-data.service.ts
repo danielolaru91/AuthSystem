@@ -42,7 +42,7 @@ export class DashboardDataService {
   }
 
   updateUser(id: number, payload: any) {
-    return this.http.put<User>(`${this.api}/users/${id}`, payload).pipe(
+    return this.http.put<User>(`${this.api}/users/${id}`, payload, { withCredentials: true }).pipe(
       tap(() => this.state.updateUser(id, payload))
     );
   }
