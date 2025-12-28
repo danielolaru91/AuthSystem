@@ -1,11 +1,9 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-confirm-dialog',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatButtonModule],
   template: `
     <h2 mat-dialog-title>Confirm Action</h2>

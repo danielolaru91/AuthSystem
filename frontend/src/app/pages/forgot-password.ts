@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, signal, inject } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { email, Field, form, required, submit } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -17,7 +17,6 @@ export interface ForgotPasswordModel {
 @Component({
   selector: 'app-forgot-password',
   imports: [Field, MatFormFieldModule, MatInputModule, MatCardModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, RouterLink],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="forgot-password-wrapper">
         <mat-card>

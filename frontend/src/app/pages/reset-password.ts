@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Field, form, required, minLength } from '@angular/forms/signals';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,7 +27,6 @@ export interface ResetPasswordModel {
     MatSnackBarModule,
     RouterLink
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="forgot-password-wrapper">
       <mat-card>

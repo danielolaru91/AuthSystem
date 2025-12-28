@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
@@ -6,7 +6,6 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-page-not-found',
   imports: [MatCardModule, MatButtonModule, RouterLink],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-not-found-wrapper">
         <mat-card>

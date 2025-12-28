@@ -2,8 +2,7 @@ import { Directive, Input, TemplateRef, ViewContainerRef, inject, effect } from 
 import { AuthService } from '../services/auth.service';
 
 @Directive({
-  selector: '[canRole]',
-  standalone: true
+  selector: '[canRole]'
 })
 export class CanRoleDirective {
   private auth = inject(AuthService);

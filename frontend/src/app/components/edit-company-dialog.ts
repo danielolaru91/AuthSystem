@@ -8,7 +8,6 @@ import { Inject } from '@angular/core';
 
 @Component({
   selector: 'app-edit-company-dialog',
-  standalone: true,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   template: `
     <h2 mat-dialog-title>Edit Company</h2>

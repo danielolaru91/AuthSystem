@@ -7,7 +7,6 @@ import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-confirm-email',
-  standalone: true,
   imports: [CommonModule, MatCardModule, MatButtonModule],
   template: `
     <div class="container">

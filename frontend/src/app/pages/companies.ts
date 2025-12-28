@@ -19,7 +19,6 @@ import { GlobalStateService } from '../services/global-state.service';
 
 @Component({
   selector: 'app-companies',
-  standalone: true,
   imports: [
     MatTableModule,
     MatButtonModule,

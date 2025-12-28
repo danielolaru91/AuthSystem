@@ -1,6 +1,5 @@
 import {
   Component,
-  ChangeDetectionStrategy,
   OnInit,
   inject,
   signal,
@@ -29,8 +28,6 @@ import { DashboardDataService, User } from '../services/dashboard-data.service';
 
 @Component({
   selector: 'app-users',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatTableModule,
     MatPaginatorModule,

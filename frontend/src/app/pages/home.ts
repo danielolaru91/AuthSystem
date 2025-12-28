@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { DashboardDataService } from '../services/dashboard-data.service';
@@ -6,9 +6,7 @@ import { GlobalStateService } from '../services/global-state.service';
 
 @Component({
   selector: 'app-dashboard-home',
-  standalone: true,
   imports: [BaseChartDirective],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2>Dashboard</h2>
     <p>Dashboard Page, available to logged in users only</p>
