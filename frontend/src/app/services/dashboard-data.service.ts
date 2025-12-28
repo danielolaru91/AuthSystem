@@ -1,9 +1,37 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { GlobalStateService, User, Company } from './global-state.service';
+import { GlobalStateService } from './global-state.service';
 import { environment } from '../../environments/environment';
-import { Role } from './roles.service';
 import { tap } from 'rxjs/operators';
+
+export interface User {
+  id: number;
+  email: string;
+  emailConfirmed: boolean;
+  roleId: number;
+}
+
+export interface CreateUserDto {
+  email: string;
+  password: string;
+  roleId: number;
+}
+
+export interface UpdateUserDto {
+  email: string;
+  emailConfirmed: boolean;
+  roleId: number;
+}
+
+export interface Role {
+  id: number;
+  name: string;
+}
+
+export interface Company {
+  id: number;
+  name: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class DashboardDataService {

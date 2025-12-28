@@ -1,17 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Role } from './roles.service';
-
-export interface User {
-  id: number;
-  email: string;
-  emailConfirmed: boolean;
-  roleId: number;
-}
-
-export interface Company {
-  id: number;
-  name: string;
-}
+import { Company, Role, User } from './dashboard-data.service';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalStateService {

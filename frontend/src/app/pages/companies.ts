@@ -4,7 +4,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { CompaniesService, Company } from '../services/companies.service';
 import { EditCompanyDialog } from '../components/edit-company-dialog';
 import { CreateCompanyDialog } from '../components/create-company-dialog';
 import { ConfirmDialog } from '../components/confirm-dialog';
@@ -15,7 +14,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { DashboardDataService } from '../services/dashboard-data.service';
+import { Company, DashboardDataService } from '../services/dashboard-data.service';
 import { GlobalStateService } from '../services/global-state.service';
 
 @Component({
@@ -205,7 +204,6 @@ import { GlobalStateService } from '../services/global-state.service';
   `
 })
 export class Companies implements OnInit {
-  private service = inject(CompaniesService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private dashboardData = inject(DashboardDataService);

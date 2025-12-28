@@ -13,13 +13,11 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { UsersService, User } from '../services/users.service';
 import { CreateUserDialog } from '../components/create-user-dialog';
 import { ConfirmDialog } from '../components/confirm-dialog';
 import { EditUserDialog } from '../components/edit-user-dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
-import { RolesService } from '../services/roles.service';
 import { CanRoleDirective } from '../directives/canRole.directive';
 import { AuthService } from '../services/auth.service';
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -27,7 +25,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { GlobalStateService } from '../services/global-state.service';
-import { DashboardDataService } from '../services/dashboard-data.service';
+import { DashboardDataService, User } from '../services/dashboard-data.service';
 
 @Component({
   selector: 'app-users',
@@ -241,11 +239,9 @@ import { DashboardDataService } from '../services/dashboard-data.service';
   `
 })
 export class Users implements OnInit {
-  private usersService = inject(UsersService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private authService = inject(AuthService);
-  private rolesService = inject(RolesService);
 
   private dashboardData = inject(DashboardDataService);
   private globalState = inject(GlobalStateService);
