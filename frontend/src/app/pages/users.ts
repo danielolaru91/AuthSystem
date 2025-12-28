@@ -475,8 +475,13 @@ export class Users implements OnInit {
           });
 
           if (response.updatedOwnAccount) {
-            this.authService.updateCurrentUserRole(response.role);
+            this.authService.logout().subscribe(() => {
+              // Redirect to login page
+              window.location.href = '/login';
+            });
+            return;
           }
+
         },
         error: (err) => {
           this.snackBar.open(err.error?.message || 'Failed to update user', 'Close', {

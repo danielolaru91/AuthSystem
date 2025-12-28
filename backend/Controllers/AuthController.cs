@@ -28,6 +28,62 @@ namespace backend.Controllers
             _emailService = emailService;
         }
 
+        // Helpers
+        private string GenerateRefreshToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(64);
+            return Base64UrlEncoder.Encode(bytes);
+        }
+
+        private string GenerateAccessToken(User user)
+        {
+            var keyString = _config["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
+            if (string.IsNullOrEmpty(keyString))
+                throw new Exception("JWT key is not set in configuration or environment");
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.Name)
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: "backend",
+                audience: "frontend",
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(15), // short-lived access token
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private void SetAuthCookies(string accessToken, string refreshToken, DateTime refreshExpires)
+        {
+            // Access token cookie (short-lived)
+            Response.Cookies.Append("auth_token", accessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, // set true in production
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15),
+                Path = "/"
+            });
+
+            // Refresh token cookie (long-lived)
+            Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, // set true in production
+                SameSite = SameSiteMode.Lax,
+                Expires = refreshExpires,
+                Path = "/"
+            });
+        }
+
         // POST: api/auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -83,43 +139,59 @@ namespace backend.Controllers
             if (!user.EmailConfirmed)
                 return Unauthorized(new { Success = false, Message = "Please confirm your email before logging in." });
 
-            var keyString = _config["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY");
-            if (string.IsNullOrEmpty(keyString))
-                throw new Exception("JWT key is not set in configuration or environment");
+            // Generate tokens
+            var accessToken = GenerateAccessToken(user);
+            var refreshToken = GenerateRefreshToken();
+            var refreshExpires = DateTime.UtcNow.AddDays(7); // long-lived refresh token
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+            // Persist refresh token (rotation base)
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpires = refreshExpires;
+            await _context.SaveChangesAsync();
 
-            var claims = new[]
+            // Set cookies
+            SetAuthCookies(accessToken, refreshToken, refreshExpires);
+
+            return Ok(new
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.Name)
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: "backend",
-                audience: "frontend",
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
-                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-            );
-
-            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-
-            Response.Cookies.Append("auth_token", jwt, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = false,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddHours(2),
-                Path = "/"
-            });
-
-            return Ok(new 
-            { 
                 Success = true,
                 Role = user.Role.Name,
                 UserId = user.Id
+            });
+        }
+
+        // POST: api/auth/refresh
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh()
+        {
+            if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken) || string.IsNullOrEmpty(refreshToken))
+                return Unauthorized(new { Success = false, Message = "No refresh token" });
+
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u =>
+                    u.RefreshToken == refreshToken &&
+                    u.RefreshTokenExpires > DateTime.UtcNow);
+
+            if (user == null)
+                return Unauthorized(new { Success = false, Message = "Invalid or expired refresh token" });
+
+            // Rotate refresh token
+            var newRefreshToken = GenerateRefreshToken();
+            var newRefreshExpires = DateTime.UtcNow.AddDays(7);
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpires = newRefreshExpires;
+
+            // New access token
+            var newAccessToken = GenerateAccessToken(user);
+
+            await _context.SaveChangesAsync();
+
+            SetAuthCookies(newAccessToken, newRefreshToken, newRefreshExpires);
+
+            return Ok(new
+            {
+                Success = true
             });
         }
 
@@ -135,10 +207,27 @@ namespace backend.Controllers
         }
 
         [HttpPost("logout")]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (int.TryParse(userId, out var id))
+                {
+                    var user = await _context.Users.FindAsync(id);
+                    if (user != null)
+                    {
+                        user.RefreshToken = null;
+                        user.RefreshTokenExpires = null;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+
             Response.Cookies.Delete("auth_token");
-            return Ok();
+            Response.Cookies.Delete("refresh_token");
+
+            return Ok(new { Success = true });
         }
 
         // POST: api/auth/request-reset

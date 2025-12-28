@@ -136,53 +136,31 @@ namespace backend.Controllers
             if (!await _context.Roles.AnyAsync(r => r.Id == dto.RoleId))
                 return BadRequest(new { Success = false, Message = "Invalid role" });
 
+            // Update fields
             user.Email = dto.Email;
             user.EmailConfirmed = dto.EmailConfirmed;
             user.RoleId = dto.RoleId;
 
             await _context.SaveChangesAsync();
 
-            await _context.Entry(user).Reference(u => u.Role).LoadAsync();
+            // If the logged-in user updated their own account → invalidate refresh token
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (Request.Cookies.TryGetValue("auth_token", out var token))
+            if (currentUserId == user.Id.ToString())
             {
-                var handler = new JwtSecurityTokenHandler();
-                var jwt = handler.ReadJwtToken(token);
-                var currentUserId = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                user.RefreshToken = null;
+                user.RefreshTokenExpires = null;
+                await _context.SaveChangesAsync();
 
-                if (currentUserId == user.Id.ToString())
-                {
-                    var keyString = _config["Jwt:Key"];
-                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+                // Remove cookies so frontend triggers /refresh automatically
+                Response.Cookies.Delete("auth_token");
+                Response.Cookies.Delete("refresh_token");
 
-                    var claims = new[]
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                        new Claim(ClaimTypes.Email, user.Email),
-                        new Claim(ClaimTypes.Role, user.Role.Name)
-                    };
-
-                    var newToken = new JwtSecurityToken(
-                        issuer: "backend",
-                        audience: "frontend",
-                        claims: claims,
-                        expires: DateTime.UtcNow.AddHours(2),
-                        signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
-                    );
-
-                    var jwtString = handler.WriteToken(newToken);
-
-                    Response.Cookies.Append("auth_token", jwtString, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = false,
-                        SameSite = SameSiteMode.Lax,
-                        Expires = DateTimeOffset.UtcNow.AddHours(2),
-                        Path = "/"
-                    });
-
-                    return Ok(new { updatedOwnAccount = true, role = user.Role.Name });
-                }
+                return Ok(new 
+                { 
+                    updatedOwnAccount = true,
+                    message = "Your account was updated. Please re-authenticate."
+                });
             }
 
             return Ok(new { updatedOwnAccount = false });
