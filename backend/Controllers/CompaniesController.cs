@@ -1,6 +1,7 @@
 using backend.Data;
 using backend.Dtos;
 using backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ public class CompaniesController : ControllerBase
         _context = context;
     }
 
+    [Authorize]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<CompanyDto>>> GetCompanies()
     {
@@ -25,6 +27,7 @@ public class CompaniesController : ControllerBase
         return Ok(companies);
     }
 
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<ActionResult<CompanyDto>> GetCompany(int id)
     {
@@ -34,6 +37,7 @@ public class CompaniesController : ControllerBase
         return Ok(new CompanyDto { Id = company.Id, Name = company.Name });
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<CompanyDto>> CreateCompany(CreateCompanyDto dto)
     {
@@ -46,6 +50,7 @@ public class CompaniesController : ControllerBase
             new CompanyDto { Id = company.Id, Name = company.Name });
     }
 
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCompany(int id, UpdateCompanyDto dto)
     {
@@ -58,6 +63,7 @@ public class CompaniesController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCompany(int id)
     {
@@ -69,7 +75,8 @@ public class CompaniesController : ControllerBase
 
         return NoContent();
     }
-
+    
+    [Authorize]
     [HttpPost("bulk-delete")]
     public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
     {

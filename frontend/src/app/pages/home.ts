@@ -42,44 +42,56 @@ export class Home {
 
   // --- CHART DATA BUILT FROM SIGNALS ---
 
-  rolesData = computed<ChartConfiguration<'doughnut'>['data']>(() => {
-    const roleCounts = this._globalstate.usersByRole();
-    const labels = Object.keys(roleCounts);
-    const values = Object.values(roleCounts);
+rolesData = computed<ChartConfiguration<'doughnut'>['data']>(() => {
+  const roleCounts = this._globalstate.usersByRole();
+  const labels = Object.keys(roleCounts);
+  const values = Object.values(roleCounts);
 
-    return {
-      labels,
-      datasets: [
-        {
-          data: values,
-          backgroundColor: ['#3f51b5', '#ff9800', '#9c27b0', '#4caf50', '#e91e63'],
-          hoverBackgroundColor: ['#5c6bc0', '#ffb74d', '#ba68c8', '#66bb6a', '#f06292']
-        }
-      ]
-    };
-  });
-
-  confirmationData = computed<ChartConfiguration<'doughnut'>['data']>(() => ({
-    labels: ['Confirmed', 'Unconfirmed'],
+  return {
+    labels: labels.length ? labels : ['No users'],
     datasets: [
       {
-        data: [this._globalstate.confirmedUsers(), this._globalstate.unconfirmedUsers()],
+        data: values.length ? values : [0],
+        backgroundColor: ['#3f51b5', '#ff9800', '#9c27b0', '#4caf50', '#e91e63'],
+        hoverBackgroundColor: ['#5c6bc0', '#ffb74d', '#ba68c8', '#66bb6a', '#f06292']
+      }
+    ]
+  };
+});
+
+
+confirmationData = computed<ChartConfiguration<'doughnut'>['data']>(() => {
+  const confirmed = this._globalstate.confirmedUsers();
+  const unconfirmed = this._globalstate.unconfirmedUsers();
+  const total = confirmed + unconfirmed;
+
+  return {
+    labels: total ? ['Confirmed', 'Unconfirmed'] : ['No users'],
+    datasets: [
+      {
+        data: total ? [confirmed, unconfirmed] : [0],
         backgroundColor: ['#4caf50', '#f44336'],
         hoverBackgroundColor: ['#66bb6a', '#e57373']
       }
     ]
-  }));
+  };
+});
 
-  companiesData = computed<ChartConfiguration<'doughnut'>['data']>(() => ({
-    labels: ['Companies'],
-    datasets: [
-      {
-        data: [this._globalstate.totalCompanies()],
-        backgroundColor: ['#009688'],
-        hoverBackgroundColor: ['#26a69a']
-      }
-    ]
-  }));
+
+  companiesData = computed<ChartConfiguration<'doughnut'>['data']>(() => {
+    const total = this._globalstate.totalCompanies();
+
+    return {
+      labels: total ? ['Companies'] : ['No companies'],
+      datasets: [
+        {
+          data: total ? [total] : [0],
+          backgroundColor: ['#009688'],
+          hoverBackgroundColor: ['#26a69a']
+        }
+      ]
+    };
+  });
 
   // --- SHARED OPTIONS ---
   donutOptions: ChartConfiguration<'doughnut'>['options'] = {
@@ -92,6 +104,11 @@ export class Home {
           label: (ctx) => {
             const dataset = ctx.dataset.data as number[];
             const total = dataset.reduce((a, b) => a + b, 0);
+
+            if (!total) {
+              return ctx.label as string;
+            }
+
             const value = ctx.parsed;
             const percentage = ((value / total) * 100).toFixed(1);
             return `${ctx.label}: ${value} (${percentage}%)`;
@@ -107,6 +124,17 @@ export class Home {
 
             return data.labels!.map((label, i) => {
               const value = dataset[i];
+
+              if (!total) {
+                return {
+                  text: label as string,
+                  fillStyle: '#e0e0e0',
+                  strokeStyle: '#fff',
+                  hidden: false,
+                  index: i
+                };
+              }
+
               const percentage = ((value / total) * 100).toFixed(1);
 
               return {

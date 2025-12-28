@@ -44,17 +44,17 @@ export class DashboardDataService {
   // -----------------------------------------------------
   ensureLoaded() {
     if (!this.state.usersLoaded()) {
-      this.http.get<User[]>(`${this.api}/users`)
+      this.http.get<User[]>(`${this.api}/users`, { withCredentials: true })
         .subscribe(res => this.state.setUsers(res));
     }
 
     if (!this.state.rolesLoaded()) {
-      this.http.get<Role[]>(`${this.api}/roles`)
+      this.http.get<Role[]>(`${this.api}/roles`, { withCredentials: true })
         .subscribe(res => this.state.setRoles(res));
     }
 
     if (!this.state.companiesLoaded()) {
-      this.http.get<Company[]>(`${this.api}/companies`)
+      this.http.get<Company[]>(`${this.api}/companies`, { withCredentials: true })
         .subscribe(res => this.state.setCompanies(res));
     }
   }
@@ -64,7 +64,7 @@ export class DashboardDataService {
   // -----------------------------------------------------
 
   createUser(payload: any) {
-    return this.http.post<User>(`${this.api}/users`, payload).pipe(
+    return this.http.post<User>(`${this.api}/users`, payload, { withCredentials: true }).pipe(
       tap(() => this.state.addUser(payload))
     );
   }
@@ -76,13 +76,13 @@ export class DashboardDataService {
   }
 
   deleteUser(id: number) {
-    return this.http.delete(`${this.api}/users/${id}`).pipe(
+    return this.http.delete(`${this.api}/users/${id}`, { withCredentials: true }).pipe(
       tap(() => this.state.removeUser(id))
     );
   }
 
   bulkDeleteUsers(ids: number[]) {
-    return this.http.post(`${this.api}/users/bulk-delete`, { ids }).pipe(
+    return this.http.post(`${this.api}/users/bulk-delete`, { ids }, { withCredentials: true }).pipe(
       tap(() => ids.forEach(id => this.state.removeUser(id)))
     );
   }
@@ -92,19 +92,19 @@ export class DashboardDataService {
   // -----------------------------------------------------
 
   createRole(payload: any) {
-    return this.http.post<Role>(`${this.api}/roles`, payload).pipe(
+    return this.http.post<Role>(`${this.api}/roles`, payload, { withCredentials: true }).pipe(
       tap(() => this.state.addRole(payload))
     );
   }
 
   updateRole(id: number, payload: any) {
-    return this.http.put<Role>(`${this.api}/roles/${id}`, payload).pipe(
+    return this.http.put<Role>(`${this.api}/roles/${id}`, payload, { withCredentials: true }).pipe(
       tap(() => this.state.updateRole(id, payload))
     );
   }
 
   deleteRole(id: number) {
-    return this.http.delete(`${this.api}/roles/${id}`).pipe(
+    return this.http.delete(`${this.api}/roles/${id}`, { withCredentials: true }).pipe(
       tap(() => this.state.removeRole(id))
     );
   }
@@ -114,13 +114,13 @@ export class DashboardDataService {
   // -----------------------------------------------------
 
   createCompany(payload: any) {
-    return this.http.post<Company>(`${this.api}/companies`, payload).pipe(
+    return this.http.post<Company>(`${this.api}/companies`, payload, { withCredentials: true }).pipe(
       tap(() => this.state.addCompany(payload))
     );
   }
 
   updateCompany(id: number, payload: any) {
-    return this.http.put<Company>(`${this.api}/companies/${id}`, payload).pipe(
+    return this.http.put<Company>(`${this.api}/companies/${id}`, payload, { withCredentials: true }).pipe(
       tap(() => {
         this.state.updateCompany(id, payload)
   })
@@ -128,13 +128,13 @@ export class DashboardDataService {
   }
 
   deleteCompany(id: number) {
-    return this.http.delete(`${this.api}/companies/${id}`).pipe(
+    return this.http.delete(`${this.api}/companies/${id}`, { withCredentials: true }).pipe(
       tap(() => this.state.removeCompany(id))
     );
   }
 
   bulkDeleteCompanies(ids: number[]) {
-    return this.http.post(`${this.api}/companies/bulk-delete`, { ids }).pipe(
+    return this.http.post(`${this.api}/companies/bulk-delete`, { ids }, { withCredentials: true }).pipe(
       tap(() => ids.forEach(id => this.state.removeCompany(id)))
     );
   }

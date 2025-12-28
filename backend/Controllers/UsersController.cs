@@ -7,6 +7,7 @@ using backend.Dtos;
 using backend.DTOs;
 using backend.Models;
 using backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +30,8 @@ namespace backend.Controllers
         }
 
         // GET: api/users
+        
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
@@ -47,6 +50,7 @@ namespace backend.Controllers
         }
 
         // GET: api/users/5
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUser(int id)
         {
@@ -67,6 +71,7 @@ namespace backend.Controllers
         }
 
         // POST: api/users
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<UserDto>> CreateUser(CreateUserDto dto)
         {
@@ -123,6 +128,7 @@ namespace backend.Controllers
         }
 
         // PUT: api/users/5
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, UpdateUserDto dto)
         {
@@ -168,6 +174,7 @@ namespace backend.Controllers
 
 
         // DELETE: api/users/5
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -182,6 +189,7 @@ namespace backend.Controllers
             return NoContent();
         }
 
+        [Authorize]
         [HttpPost("bulk-delete")]
         public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
         {
