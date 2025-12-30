@@ -1,7 +1,7 @@
 import { ApplicationConfig, provideAppInitializer } from '@angular/core';
 import { provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { HTTP_INTERCEPTORS, provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { routes } from './routes/app.routes';
 import { restoreSession } from './session-initializer';
@@ -11,7 +11,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(),
+    provideHttpClient(withInterceptorsFromDi()),
     provideRouter(routes),
     provideCharts(withDefaultRegisterables()),
     provideAppInitializer(() => restoreSession()), provideCharts(withDefaultRegisterables()),

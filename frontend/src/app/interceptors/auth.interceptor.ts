@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpEvent, HttpInterceptor, HttpHandler, HttpRequest, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -7,23 +7,16 @@ import { Router } from '@angular/router';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-
-  constructor(
-    private authService: AuthService,
-    private router: Router
-  ) {}
-
+  private readonly _authService = inject(AuthService);
+  private readonly _router = inject(Router);
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-
     return next.handle(req).pipe(
       catchError((error: HttpErrorResponse) => {
-
-        // Detect session expiration
         if (error.status === 401 && error.error?.error === 'SESSION_EXPIRED') {
-          this.authService.logout(); // clear cookies, local state, etc.
-          this.router.navigate(['/login']);
+            this._authService.logout().subscribe(() => {
+                this._router.navigateByUrl('/login');
+            });
         }
-
         return throwError(() => error);
       })
     );

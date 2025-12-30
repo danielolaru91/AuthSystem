@@ -68,7 +68,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 return Task.CompletedTask;
             },
 
-            // 🔥 TokenVersion validation
+            // TokenVersion validation
             OnTokenValidated = async context =>
             {
                 var principal = context.Principal;
@@ -110,6 +110,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     context.Fail("Token invalidated");
                     return;
                 }
+            },
+
+            // Proper fix: return JSON instead of empty 401
+            OnChallenge = context =>
+            {
+                // Prevent default empty 401 response
+                context.HandleResponse();
+
+                context.Response.StatusCode = 401;
+                context.Response.ContentType = "application/json";
+
+                var payload = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    success = false,
+                    error = "SESSION_EXPIRED",
+                    message = "Your session has expired. Please re-authenticate."
+                });
+
+                return context.Response.WriteAsync(payload);
             }
         };
     });

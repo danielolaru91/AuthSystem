@@ -476,7 +476,6 @@ export class Users implements OnInit {
 
           if (response.updatedOwnAccount) {
             this.authService.logout().subscribe(() => {
-              // Redirect to login page
               window.location.href = '/login';
             });
             return;
