@@ -3,6 +3,7 @@ using backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -56,15 +57,59 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
 
-        // Read JWT from cookie
         options.Events = new JwtBearerEvents
         {
+            // Read JWT from cookie
             OnMessageReceived = context =>
             {
                 if (context.Request.Cookies.TryGetValue("auth_token", out var token))
                     context.Token = token;
 
                 return Task.CompletedTask;
+            },
+
+            // 🔥 TokenVersion validation
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal;
+                if (principal == null)
+                {
+                    context.Fail("Invalid token");
+                    return;
+                }
+
+                var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var tokenVersionClaim = principal.FindFirst("tokenVersion")?.Value;
+
+                if (string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(tokenVersionClaim))
+                {
+                    context.Fail("Missing tokenVersion or userId");
+                    return;
+                }
+
+                if (!int.TryParse(userIdClaim, out var userId) ||
+                    !int.TryParse(tokenVersionClaim, out var tokenVersionFromToken))
+                {
+                    context.Fail("Invalid tokenVersion or userId format");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                var user = await db.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    context.Fail("User not found");
+                    return;
+                }
+
+                if (user.TokenVersion != tokenVersionFromToken)
+                {
+                    context.Fail("Token invalidated");
+                    return;
+                }
             }
         };
     });

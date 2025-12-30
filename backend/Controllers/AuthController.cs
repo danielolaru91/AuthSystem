@@ -47,7 +47,8 @@ namespace backend.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.Name)
+                new Claim(ClaimTypes.Role, user.Role.Name),
+                new Claim("tokenVersion", user.TokenVersion.ToString())
             };
 
             var token = new JwtSecurityToken(
@@ -197,13 +198,27 @@ namespace backend.Controllers
 
         [Authorize]
         [HttpGet("me")]
-        public IActionResult Me()
+        public async Task<IActionResult> Me()
         {
-            var email = User.FindFirstValue(ClaimTypes.Email);
-            var role = User.FindFirstValue(ClaimTypes.Role);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            return Ok(new { authenticated = true, email, role, userId });
+            if (!int.TryParse(userId, out var id))
+                return Unauthorized(new { authenticated = false });
+
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null)
+                return Unauthorized(new { authenticated = false });
+
+            return Ok(new 
+            { 
+                authenticated = true, 
+                email = user.Email, 
+                role = user.Role.Name, 
+                userId = user.Id 
+            });
         }
 
         [HttpPost("logout")]

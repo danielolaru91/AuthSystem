@@ -14,6 +14,9 @@ namespace backend.Models
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
+        public int RoleId { get; set; }
+        public Role Role { get; set; } = null!;
+
         public string? ResetToken { get; set; }
 
         public DateTime? ResetTokenExpires { get; set; }
@@ -21,13 +24,12 @@ namespace backend.Models
         public string? RefreshToken { get; set; } 
         public DateTime? RefreshTokenExpires { get; set; }
 
-        public bool EmailConfirmed { get; set; } = false; public string? 
-
-        EmailConfirmationToken { get; set; } public DateTime? 
+        public bool EmailConfirmed { get; set; } = false; 
         
-        EmailConfirmationExpires { get; set; }
+        public string? EmailConfirmationToken { get; set; } 
+        
+        public DateTime? EmailConfirmationExpires { get; set; }
 
-        public int RoleId { get; set; }
-        public Role Role { get; set; } = null!;
+        public int TokenVersion { get; set; } = 0;
     }
 }

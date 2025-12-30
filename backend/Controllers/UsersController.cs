@@ -30,7 +30,6 @@ namespace backend.Controllers
         }
 
         // GET: api/users
-        
         [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
@@ -78,7 +77,6 @@ namespace backend.Controllers
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
                 return Conflict(new { Success = false, Message = "Email already exists" });
 
-            // Validate role
             if (!await _context.Roles.AnyAsync(r => r.Id == dto.RoleId))
                 return BadRequest(new { Success = false, Message = "Invalid role" });
 
@@ -90,7 +88,6 @@ namespace backend.Controllers
                 RoleId = dto.RoleId
             };
 
-            // If NOT confirmed → generate token + send email
             if (!dto.EmailConfirmed)
             {
                 var tokenBytes = RandomNumberGenerator.GetBytes(64);
@@ -142,28 +139,45 @@ namespace backend.Controllers
             if (!await _context.Roles.AnyAsync(r => r.Id == dto.RoleId))
                 return BadRequest(new { Success = false, Message = "Invalid role" });
 
+            var currentUserIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int.TryParse(currentUserIdClaim, out var currentUserId);
+
+            // Only enforce tokenVersion when updating own account
+            if (currentUserId == user.Id)
+            {
+                var tokenVersionClaim = User.FindFirst("tokenVersion")?.Value;
+                if (tokenVersionClaim == null || int.Parse(tokenVersionClaim) != user.TokenVersion)
+                {
+                    return Unauthorized(new
+                    {
+                        Success = false,
+                        Error = "SESSION_EXPIRED",
+                        Message = "Your session has expired. Please re-authenticate."
+                    });
+                }
+            }
+
             // Update fields
             user.Email = dto.Email;
             user.EmailConfirmed = dto.EmailConfirmed;
             user.RoleId = dto.RoleId;
 
+            // Invalidate all existing access tokens for this user
+            user.TokenVersion++;
+
+            // Invalidate refresh token
+            user.RefreshToken = null;
+            user.RefreshTokenExpires = null;
+
             await _context.SaveChangesAsync();
 
-            // If the logged-in user updated their own account → invalidate refresh token
-            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (currentUserId == user.Id.ToString())
+            if (currentUserId == user.Id)
             {
-                user.RefreshToken = null;
-                user.RefreshTokenExpires = null;
-                await _context.SaveChangesAsync();
-
-                // Remove cookies so frontend triggers /refresh automatically
                 Response.Cookies.Delete("auth_token");
                 Response.Cookies.Delete("refresh_token");
 
-                return Ok(new 
-                { 
+                return Ok(new
+                {
                     updatedOwnAccount = true,
                     message = "Your account was updated. Please re-authenticate."
                 });
@@ -171,7 +185,6 @@ namespace backend.Controllers
 
             return Ok(new { updatedOwnAccount = false });
         }
-
 
         // DELETE: api/users/5
         [Authorize]
@@ -182,6 +195,9 @@ namespace backend.Controllers
 
             if (user == null)
                 return NotFound();
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpires = null;
 
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
@@ -202,6 +218,12 @@ namespace backend.Controllers
 
             if (users.Count == 0)
                 return NotFound("No matching users found.");
+
+            foreach (var user in users)
+            {
+                user.RefreshToken = null;
+                user.RefreshTokenExpires = null;
+            }
 
             _context.Users.RemoveRange(users);
             await _context.SaveChangesAsync();

@@ -65,7 +65,7 @@ export class DashboardDataService {
 
   createUser(payload: any) {
     return this.http.post<User>(`${this.api}/users`, payload, { withCredentials: true }).pipe(
-      tap(() => this.state.addUser(payload))
+      tap((result) => this.state.addUser(result))
     );
   }
 
