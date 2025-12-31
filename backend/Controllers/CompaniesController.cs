@@ -78,13 +78,13 @@ public class CompaniesController : ControllerBase
     
     [Authorize]
     [HttpPost("bulk-delete")]
-    public async Task<IActionResult> BulkDelete([FromBody] List<int> ids)
+    public async Task<IActionResult> BulkDelete([FromBody] BulkDeleteDto dto)
     {
-        if (ids == null || ids.Count == 0)
+        if (dto.Ids == null || dto.Ids.Count == 0)
             return BadRequest("No IDs provided.");
 
         var companies = await _context.Companies
-            .Where(c => ids.Contains(c.Id))
+            .Where(c => dto.Ids.Contains(c.Id))
             .ToListAsync();
 
         if (companies.Count == 0)

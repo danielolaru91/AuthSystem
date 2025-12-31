@@ -115,7 +115,7 @@ export class DashboardDataService {
 
   createCompany(payload: any) {
     return this.http.post<Company>(`${this.api}/companies`, payload, { withCredentials: true }).pipe(
-      tap(() => this.state.addCompany(payload))
+      tap((result) => this.state.addCompany(result))
     );
   }
 
