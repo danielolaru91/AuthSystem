@@ -1,8 +1,6 @@
 using backend.Data;
 using backend.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +13,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Services
 builder.Services.AddControllers();
 builder.Services.AddScoped<EmailService>();
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -46,7 +45,8 @@ using (var scope = app.Services.CreateScope())
 // Dev tools
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
