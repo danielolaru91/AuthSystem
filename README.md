@@ -1,23 +1,43 @@
 # AuthSystem
 
-A simple authentication system built with ASP.NET Core 9 (Backend), MySQL, and Angular 21 (Frontend).
-This project provides login, registration, and user management with a MySQL database.
+A complete authentication and user management system built with ASP.NET Core 9, MySQL, and Angular 21. The backend implements a secure, modern authentication flow using short‑lived JWT access tokens, rotating refresh tokens, HttpOnly cookies, and server‑side session invalidation through tokenVersion. The frontend integrates seamlessly using Angular’s HttpClient with credentials enabled.
 
 # Features
 
-User registration and login  
-JWT-based authentication  
-Password hashing  
-MySQL database integration  
-API testing support via Postman or Swagger  
-Frontend built with Angular for UI
+User registration with email confirmation
+Login with JWT access tokens and rotating refresh tokens
+HttpOnly cookie storage for both tokens
+Short‑lived access tokens (15 minutes)
+Refresh token rotation and server‑side validation
+tokenVersion mechanism for instant session invalidation
+Password reset via email
+Full user management (create, update, delete, bulk delete)
+Automatic session restoration and refresh handling in Angular
+MySQL database integration through Entity Framework Core
+Secure password hashing using BCrypt
 
 # Tech Stack
 
-Backend: ASP.NET Core 9 with Entity Framework Core and Pomelo MySQL provider  
-Frontend: Angular 21 with TypeScript and SCSS. Uses the new control flow syntax in templates and the experimental Signal Forms API for reactive forms. 
-Database: MySQL 8+  
-Authentication: JWT (JSON Web Tokens) implemented with HttpOnly cookies. Upon login, the backend generates a JWT and sets it in a secure, HttpOnly cookie. The frontend automatically sends this cookie with each request to protected API endpoints. This approach improves security by preventing client-side scripts from accessing the token.
+Backend: ASP.NET Core 9 with Entity Framework Core and Pomelo MySQL provider
+Frontend: Angular 21 with TypeScript and SCSS, using the new control flow syntax and the experimental Signal Forms API
+Database: MySQL 8+
+Authentication: JWT access tokens and refresh tokens stored in HttpOnly cookies. The backend generates both tokens at login and sets them as HttpOnly cookies. The browser automatically sends these cookies with each request, and Angular does not have direct access to them. This prevents token theft through JavaScript and improves overall security.
+
+# Authentication Architecture
+
+Access Token: A short‑lived JWT containing userId, email, role, and tokenVersion. Used for authorization. Expires in about 15 minutes.
+
+Refresh Token: A long‑lived, cryptographically secure token stored in the database. It is rotated on every refresh request. The old token becomes invalid immediately, preventing replay attacks.
+
+HttpOnly Cookies: Both tokens are stored in HttpOnly cookies so they cannot be accessed by JavaScript. In production, cookies are marked Secure and use strict SameSite rules to reduce CSRF risks.
+
+Token Versioning: Each user has a tokenVersion stored in the database. The access token also contains this value. When a user updates their account or an admin modifies them, tokenVersion is incremented. All existing access tokens become invalid instantly.
+
+Email Confirmation: New users receive a confirmation link with a time‑limited token.
+
+Password Reset: Users can request a password reset link, also using a time‑limited token.
+
+User Management: Admins can create, update, delete, and bulk delete users. Updating a user invalidates their refresh token and increments tokenVersion.
 
 # Setup Instructions
 
