@@ -28,19 +28,87 @@ Authentication: JWT access tokens and refresh tokens stored in HttpOnly cookies.
 
 # Authentication Architecture
 
-Access Token: A short‑lived JWT containing userId, email, role, and tokenVersion. Used for authorization. Expires in about 15 minutes.
 
-Refresh Token: A long‑lived, cryptographically secure token stored in the database. It is rotated on every refresh request. The old token becomes invalid immediately, preventing replay attacks.
+## 1. User Registration Flow
 
-HttpOnly Cookies: Both tokens are stored in HttpOnly cookies so they cannot be accessed by JavaScript. In production, cookies are marked Secure and use strict SameSite rules to reduce CSRF risks.
+- User submits registration form (email + password).  
+- Backend hashes the password with BCrypt and creates the user in MySQL.  
+- Backend generates an email confirmation token and sends a confirmation link.  
+- When the user clicks the link, the backend validates the token and marks the user as email confirmed.
 
-Token Versioning: Each user has a tokenVersion stored in the database. The access token also contains this value. When a user updates their account or an admin modifies them, tokenVersion is incremented. All existing access tokens become invalid instantly.
+## 2. Login Flow (Access + Refresh Tokens)
 
-Email Confirmation: New users receive a confirmation link with a time‑limited token.
+- User logs in with email and password.  
+- Backend validates credentials and generates:
+  - A short‑lived JWT access token (userId, email, role, tokenVersion, ~15 minutes).  
+  - A long‑lived refresh token stored in the database.  
+- Both tokens are sent as HttpOnly cookies (`accessToken`, `refreshToken`).  
+- Angular never reads the tokens directly; the browser sends cookies automatically with each request.
 
-Password Reset: Users can request a password reset link, also using a time‑limited token.
+## 3. Access Token Expiration & Refresh Flow
 
-User Management: Admins can create, update, delete, and bulk delete users. Updating a user invalidates their refresh token and increments tokenVersion.
+- When the access token expires, API calls fail authorization.  
+- Backend reads the refresh token from the HttpOnly cookie and validates it against the database.  
+- If valid, the backend:
+  - Issues a new access token.  
+  - Rotates the refresh token (creates a new one, invalidates the old one).  
+- New tokens are again set as HttpOnly cookies.
+
+## 4. Logout Flow
+
+- User triggers logout.  
+- Backend deletes the refresh token record from the database.  
+- Backend clears both access and refresh token cookies.  
+- Without a valid refresh token, no new access tokens can be issued.
+
+## 5. Token Versioning (Instant Session Invalidation)
+
+- Each user has a `tokenVersion` stored in the database.  
+- The access token also contains `tokenVersion`.  
+- When a user or admin performs a security‑sensitive update (e.g., password change, role change), `tokenVersion` is incremented.  
+- All existing access tokens with the old version become invalid immediately.
+
+## 6. Automatic Session Restoration (Frontend)
+
+- On app load, Angular calls an endpoint like `/auth/refresh` with `withCredentials: true`.  
+- If the refresh token is valid, the backend issues a new access token and rotated refresh token.  
+- The user stays logged in without manually handling tokens in the frontend.  
+- If the refresh token is invalid or missing, the user is treated as logged out.
+
+## 7. Password Reset Flow
+
+- User requests a password reset.  
+- Backend generates a time‑limited reset token and sends it via email.  
+- User opens the link, submits a new password.  
+- Backend hashes the new password, increments `tokenVersion`, and invalidates all refresh tokens for that user.  
+- All existing sessions are effectively terminated.
+
+## 8. Admin User Management Flow
+
+- Admins can create, update, delete, and bulk delete users.  
+- When an admin updates a user (e.g., role, status), the system:
+  - Increments `tokenVersion` for that user.  
+  - Invalidates their refresh tokens.  
+- This ensures role or status changes take effect immediately across all sessions.
+
+## 9. Database Structure (Simplified)
+
+- **Users table** (created via EF Core migrations) typically includes:  
+  - `Id`, `Email`, `PasswordHash`, `TokenVersion`, `EmailConfirmed`, timestamps, etc.  
+- **RefreshTokens table** includes:  
+  - `Id`, `UserId`, `Token`, `ExpiresAt`, timestamps.  
+- Refresh tokens are always validated against this table and rotated on use.
+
+## 10. Frontend Integration (Angular 21)
+
+- Angular uses HttpClient with `withCredentials: true` so cookies are sent automatically.  
+- No tokens are stored in localStorage or sessionStorage.  
+- The app relies on backend endpoints for:
+  - Login  
+  - Refresh  
+  - Logout  
+  - User management  
+- This design minimizes exposure of tokens to JavaScript and aligns with modern security best practices.
 
 # Setup Instructions
 
